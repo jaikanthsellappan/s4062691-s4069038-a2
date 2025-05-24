@@ -33,4 +33,7 @@ export class Users {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({ default: true })
+  isValid: boolean;
 }
