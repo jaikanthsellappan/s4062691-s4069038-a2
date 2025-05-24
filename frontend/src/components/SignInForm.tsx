@@ -1,79 +1,70 @@
-import React from "react";
-import { useEffect, useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import ReCAPTCHA from "react-google-recaptcha";
+import axios from "../api"; // Axios instance (make sure it's setup)
 
-// Public reCAPTCHA site key (v2 checkbox version)
 const SITE_KEY = "6LfJsxIrAAAAADRnyRLUfgop7CfeQ6_bPCUyyVaF";
 
 export default function SignInForm() {
   const router = useRouter();
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
-  // Form state variables
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [recaptchaToken, setRecaptchaToken] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // This function runs when the form is submitted
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent the page from reloading
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError("");
     setSuccess("");
 
-    // Make sure both fields are filled
     if (!email || !password) {
       setError("Please fill in all fields.");
       return;
     }
 
-    // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError("Invalid email format.");
       return;
     }
 
-    // Require passwords to be 6 characters or more
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
     }
 
-    // Make sure reCAPTCHA was completed
     if (!recaptchaToken) {
       setError("Please verify the reCAPTCHA.");
       return;
     }
 
-    // Look for a matching user in localStorage
-    const users = JSON.parse(localStorage.getItem("tt-users") || "[]");
-    const matchedUser = users.find(
-      (u: any) => u.email === email && u.password === password
-    );
+    try {
+      const res = await axios.post("/login", { email, password });
 
-    if (!matchedUser) {
-      setError("Incorrect email or password.");
-      return;
+      const user = res.data.user;
+      localStorage.setItem("tt-current-user", JSON.stringify(user));
+      setSuccess(res.data.message || "Login successful!");
+
+      // Redirect to the correct dashboard
+      setTimeout(() => {
+        if (user.role === "tutor") {
+          router.push("/tutors");
+        } else if (user.role === "lecturer") {
+          router.push("/lecturers");
+        } else {
+          router.push("/");
+        }
+      }, 1000);
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message || "Login failed. Please try again.";
+      setError(msg);
     }
-
-    // Save the current user and show a success message
-    localStorage.setItem("tt-current-user", JSON.stringify(matchedUser));
-    setSuccess("✅ Login successful!");
-
-    // Redirect to the correct dashboard after login
-    setTimeout(() => {
-      if (matchedUser.role === "tutor") {
-        router.push("/tutors");
-      } else if (matchedUser.role === "lecturer") {
-        router.push("/lecturers");
-      }
-    }, 1000);
   };
 
-  // Called when the user completes the reCAPTCHA
   const handleCaptchaChange = (token: string | null) => {
     if (token) setRecaptchaToken(token);
   };
@@ -114,7 +105,7 @@ export default function SignInForm() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter 6 characters or more"
+          placeholder="Enter 8 characters or more"
           className="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
         />
       </div>
