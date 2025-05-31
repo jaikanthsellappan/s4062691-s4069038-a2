@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany
 } from "typeorm";
+import { TutorApplication } from "./TutorApplication";
 
 export type UserRole = "tutor" | "lecturer";
 
@@ -36,4 +38,8 @@ export class Users {
 
   @Column({ default: true })
   isValid: boolean;
+
+  @OneToMany(() => TutorApplication, (app) => app.user)
+  applications: TutorApplication[];
+
 }

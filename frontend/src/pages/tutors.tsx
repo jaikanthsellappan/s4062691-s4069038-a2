@@ -2,21 +2,44 @@ import React from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import NavbarLecturer from "@/components/NavbarLecturer";
+import axios from "../api";  
 
-// List of available courses for tutors to apply to
-const courseList = [
-  { code: "COSC2758", name: "Full Stack Development" },
-  { code: "COSC2626", name: "Cloud Computing" },
-  { code: "COSC2631", name: "Programming Fundamentals" },
-  { code: "COSC2611", name: "Web Programming" },
-  { code: "COSC2407", name: "AI and Machine Learning" },
-  { code: "COSC1284", name: "Algorithms and Analysis" },
-  { code: "COSC2627", name: "Advanced Programming" },
-];
+
+// const courseList = [
+//   { code: "COSC2758", name: "Full Stack Development" },
+//   { code: "COSC2626", name: "Cloud Computing" },
+//   { code: "COSC2631", name: "Programming Fundamentals" },
+//   { code: "COSC2611", name: "Web Programming" },
+//   { code: "COSC2407", name: "AI and Machine Learning" },
+//   { code: "COSC1284", name: "Algorithms and Analysis" },
+//   { code: "COSC2627", name: "Advanced Programming" },
+// ];
 
 export default function TutorsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+
+  type Course = {
+  code: string;
+  name: string;
+};
+
+// List of available courses for tutors to apply 
+  const [courseList, setCourseList] = useState<Course[]>([]);
+
+  useEffect(() => {
+  const fetchCourses = async () => {
+    try {
+      const res = await axios.get("/courses");
+      setCourseList(res.data);
+    } catch (err) {
+      alert("Failed to fetch courses");
+    }
+  };
+
+  fetchCourses();
+}, []);
+
 
   // Initialize form fields
   const [form, setForm] = useState({
@@ -42,101 +65,42 @@ export default function TutorsPage() {
   }, []);
 
   // Handles form submission
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
-    setError("");
+  // Handles form submission
+const handleSubmit = async (e: any) => {
+  e.preventDefault();
+  setError("");
 
-    // Validation: make sure required fields are filled
-    if (
-      !form.selectedCourse ||
-      !form.availability ||
-      !form.skills ||
-      !form.credentials ||
-      !form.role
-    ) {
-      setError("Please fill all the required fields.");
-      return;
-    }
+  // Validation
+  if (
+    !form.selectedCourse ||
+    !form.availability ||
+    !form.skills ||
+    !form.credentials ||
+    !form.role
+  ) {
+    setError("Please fill all the required fields.");
+    return;
+  }
 
-    const selected = courseList.find((c) => c.code === form.selectedCourse);
-    if (!selected) {
-      setError("Invalid course selected.");
-      return;
-    }
+  const selected = courseList.find((c) => c.code === form.selectedCourse);
+  if (!selected) {
+    setError("Invalid course selected.");
+    return;
+  }
 
-    const existing = localStorage.getItem("tt-tutor-applications");
-    const all = existing ? JSON.parse(existing) : [];
+  try {
+    await axios.post("/tutor-application", {
+      courseCode: selected?.code,
+      courseName: selected?.name,
+      role: form.role,
+      availability: form.availability,
+      previousRoles: form.previousRoles.split(",").map((s) => s.trim()),
+      credentials: form.credentials.split(",").map((s) => s.trim()),
+      skills: form.skills.split(",").map((s) => s.trim()),
+      email: user.email,
+    });
 
-    // Check if the tutor already exists in localStorage
-    const existingTutor = all.find((t: any) => t.email === user.email);
-
-    if (existingTutor) {
-      // Prevent duplicate course application
-      const alreadyApplied = existingTutor.applications.some(
-        (app: any) => app.courseCode === form.selectedCourse
-      );
-
-      if (alreadyApplied) {
-        alert("You have already submitted an application for this course.");
-        // Reset form after attempt
-        setForm({
-          selectedCourse: "",
-          availability: "",
-          previousRoles: "",
-          skills: "",
-          credentials: "",
-          role: "",
-        });
-        return;
-      }
-
-      // Add new application
-      const newApplication = {
-        courseCode: selected?.code || "",
-        courseName: selected?.name || "",
-        role: form.role,
-        availability: form.availability,
-        previousRoles: form.previousRoles.split(",").map((s) => s.trim()),
-        credentials: form.credentials.split(",").map((s) => s.trim()),
-        skills: form.skills.split(",").map((s) => s.trim()),
-        name: user.name,
-        email: user.email,
-      };
-
-      existingTutor.applications.push(newApplication);
-
-      // Update the tutor's record in localStorage
-      const updated = all.filter((t: any) => t.email !== user.email);
-      updated.push(existingTutor);
-      localStorage.setItem("tt-tutor-applications", JSON.stringify(updated));
-    } else {
-      // First-time application entry
-      const tutorApp = {
-        email: user.email,
-        name: user.name,
-        applications: [
-          {
-            courseCode: selected?.code || "",
-            courseName: selected?.name || "",
-            role: form.role,
-            availability: form.availability,
-            previousRoles: form.previousRoles.split(",").map((s) => s.trim()),
-            credentials: form.credentials.split(",").map((s) => s.trim()),
-            skills: form.skills.split(",").map((s) => s.trim()),
-            name: user.name,
-            email: user.email,
-          },
-        ],
-        selections: [],
-      };
-
-      all.push(tutorApp);
-      localStorage.setItem("tt-tutor-applications", JSON.stringify(all));
-    }
-
-    alert("Your application has been submitted successfully!");
-
-    // Clear form fields after submission
+    alert("Application submitted successfully!");
     setForm({
       selectedCourse: "",
       availability: "",
@@ -145,7 +109,15 @@ export default function TutorsPage() {
       credentials: "",
       role: "",
     });
-  };
+  } catch (err: any) {
+    if (err.response?.status === 409) {
+      alert(err.response.data.message);
+    } else {
+      alert("Failed to submit application.");
+    }
+  }
+};
+
 
   if (!user) return null;
 
