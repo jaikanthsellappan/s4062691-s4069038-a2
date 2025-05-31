@@ -65,4 +65,18 @@ export class TutorApplicationController {
         }
 
   }
+async getAll(req: Request, res: Response) {
+  try {
+    const applications = await this.appRepo.find({
+      relations: ["user"], // fetch user info (foreign key relation)
+      order: { createdAt: "DESC" }, // optional: latest first
+    });
+
+    return res.status(200).json(applications);
+  } catch (error) {
+    console.error("Error fetching tutor applications:", error);
+    return res.status(500).json({ message: "Failed to retrieve applications" });
+  }
+}
+
 }

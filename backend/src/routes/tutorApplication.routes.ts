@@ -8,4 +8,8 @@ router.post("/tutor-application", async (req, res) => {
   await controller.submit(req, res);
 });
 
+router.get("/tutor-application", async (req, res) => {
+  await controller.getAll(req, res);
+});
+
 export default router;
