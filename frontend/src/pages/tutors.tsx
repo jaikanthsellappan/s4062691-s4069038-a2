@@ -24,8 +24,20 @@ export default function TutorsPage() {
   name: string;
 };
 
+type Availability ={
+  id: number;
+  availability: string;
+}
+
+type Role ={
+  id: number;
+  role: string;
+}
+
 // List of available courses for tutors to apply 
   const [courseList, setCourseList] = useState<Course[]>([]);
+  const [availabilities, setAvailability] = useState<Availability[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
 
   useEffect(() => {
   const fetchCourses = async () => {
@@ -34,6 +46,18 @@ export default function TutorsPage() {
       setCourseList(res.data);
     } catch (err) {
       alert("Failed to fetch courses");
+    }
+    try {
+      const res = await axios.get("/availability");
+      setAvailability(res.data);
+    } catch (err) {
+      alert("Failed to fetch availability");
+    }
+    try {
+      const res = await axios.get("/roles");
+      setRoles(res.data);
+    } catch (err) {
+      alert("Failed to fetch roles");
     }
   };
 
