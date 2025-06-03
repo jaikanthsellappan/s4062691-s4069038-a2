@@ -19,3 +19,7 @@ INSERT INTO availability (availability) VALUES
 INSERT INTO role (role) VALUES 
   ('Tutor'), 
   ('Lab Assistant');
+
+# query to insert pre-defined mapping values in course_mapping table...
+INSERT INTO course_mapping (courseCode, userId)
+VALUES ('COSC2626', 4);

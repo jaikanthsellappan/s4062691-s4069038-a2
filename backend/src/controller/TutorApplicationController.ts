@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { TutorApplication } from "../entity/TutorApplication";
 import { Users } from "../entity/User";
+import { CourseMapping } from "../entity/CourseMapping";
 
 export class TutorApplicationController {
   private appRepo = AppDataSource.getRepository(TutorApplication);
@@ -78,5 +79,40 @@ async getAll(req: Request, res: Response) {
     return res.status(500).json({ message: "Failed to retrieve applications" });
   }
 }
+
+async getFilteredApplications(req: Request, res: Response) {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required." });
+    }
+
+    // Step 1: Find all course codes mapped to this user (lecturer)
+    const mappingRepo = AppDataSource.getRepository(CourseMapping);
+    const mappings = await mappingRepo.find({
+      where: { userId: Number(userId) },
+    });
+
+    const courseCodes = mappings.map((m) => m.courseCode);
+
+    if (courseCodes.length === 0) {
+      return res.status(200).json([]); // No mappings → no applications
+    }
+
+    // Step 2: Find all tutor applications for the mapped courses
+    const applications = await this.appRepo.find({
+      where: courseCodes.map((code) => ({ courseCode: code })),
+      relations: ["user"],
+      order: { createdAt: "DESC" },
+    });
+
+    return res.status(200).json(applications);
+  } catch (error) {
+    console.error("Error fetching tutor applications:", error);
+    return res.status(500).json({ message: "Failed to retrieve applications" });
+  }
+}
+
 
 }

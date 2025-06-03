@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import LecturerTabContent from "@/components/LecturerTabContent";
+import axios from "../api";
+import { Console } from "console";
 
 export default function LecturersPage() {
   const router = useRouter();
@@ -33,6 +35,7 @@ export default function LecturersPage() {
       const email = parsed.email || "";
       setLecturerEmail(email);
 
+
       const selected = JSON.parse(
         localStorage.getItem(`tt-selected-tutors-${email}`) || "[]"
       );
@@ -46,6 +49,27 @@ export default function LecturersPage() {
       setIsAuthenticated(true);
     }
   }, [router]);
+
+  useEffect(() =>{
+    const fetchApplications = async () => {
+    const user = localStorage.getItem("tt-current-user");
+    if (!user) return;
+
+    const parsed = JSON.parse(user);
+    const userId = parsed.id;
+
+    try {
+      const res = await axios.get("/tutorApplications", {
+        params: { userId }
+      });
+      console.log("tutor applications from database",res.data);
+    } catch (err) {
+      console.error("Failed to fetch tutor applications", err);
+    }
+  };
+  fetchApplications();
+
+  },[])
 
   // When changing tabs, refresh the list of selected tutors
   useEffect(() => {
