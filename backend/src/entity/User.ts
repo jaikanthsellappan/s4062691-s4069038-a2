@@ -7,6 +7,7 @@ import {
   OneToMany
 } from "typeorm";
 import { TutorApplication } from "./TutorApplication";
+import { CourseMapping } from "./CourseMapping";
 
 export type UserRole = "tutor" | "lecturer";
 
@@ -41,5 +42,8 @@ export class Users {
 
   @OneToMany(() => TutorApplication, (app) => app.user)
   applications: TutorApplication[];
+
+  @OneToMany(() => CourseMapping, (assignment) => assignment.user)
+  assignedCourses: CourseMapping[];
 
 }

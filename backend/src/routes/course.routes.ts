@@ -5,7 +5,11 @@ import { CourseController } from "../controller/CourseController";
 const router = Router();
 const controller = new CourseController();
 
-router.get("/courses", async (req: Request, res: Response) => {
+router.get("/availableCourses", async (req: Request, res: Response) => {
+  await controller.available(req, res);
+});
+
+router.get("/allcourses", async (req: Request, res: Response) => {
   await controller.all(req, res);
 });
 

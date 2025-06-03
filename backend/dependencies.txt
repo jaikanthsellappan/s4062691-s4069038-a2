@@ -1,12 +1,14 @@
 # query to insert pre-defined values in course table...
-INSERT INTO course (code, name) VALUES
-('COSC2758', 'Full Stack Development'),
-('COSC2626', 'Cloud Computing'),
-('COSC2631', 'Programming Fundamentals'),
-('COSC2611', 'Web Programming'),
-('COSC2407', 'AI and Machine Learning'),
-('COSC1284', 'Algorithms and Analysis'),
-('COSC2627', 'Advanced Programming');
+INSERT INTO course (code, name, isAvailable) VALUES
+('COSC2758', 'Full Stack Development', true),
+('COSC2626', 'Cloud Computing', true),
+('COSC2631', 'Programming Fundamentals', true),
+('COSC2611', 'Web Programming', true),
+('COSC2407', 'AI and Machine Learning', true),
+('COSC1284', 'Algorithms and Analysis', true),
+('COSC2627', 'Advanced Programming', true),
+('COSC2737', 'IT Infrastructure', false);
+
 
 # query to insert pre-defined values in availability table...
 INSERT INTO availability (availability) VALUES 

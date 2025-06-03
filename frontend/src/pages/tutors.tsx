@@ -42,7 +42,7 @@ type Role ={
   useEffect(() => {
   const fetchCourses = async () => {
     try {
-      const res = await axios.get("/courses");
+      const res = await axios.get("/availableCourses");
       setCourseList(res.data);
     } catch (err) {
       alert("Failed to fetch courses");
@@ -112,12 +112,28 @@ const handleSubmit = async (e: any) => {
     return;
   }
 
+  // Validate availability value exists in options
+  const validAvailability = availabilities.some(
+    (a) => a.availability === form.availability
+  );
+  if (!validAvailability) {
+    setError("Invalid availability option selected.");
+    return;
+  }
+
+  // Validate role value exists in options
+  const validRole = roles.some((r) => r.role === form.role);
+  if (!validRole) {
+    setError("Invalid role option selected.");
+    return;
+  }
+
   try {
     await axios.post("/tutor-application", {
       courseCode: selected?.code,
       courseName: selected?.name,
-      role: form.role,
-      availability: form.availability,
+      role: form.role.trim(),
+      availability: form.availability.trim(),
       previousRoles: form.previousRoles.split(",").map((s) => s.trim()),
       credentials: form.credentials.split(",").map((s) => s.trim()),
       skills: form.skills.split(",").map((s) => s.trim()),
@@ -195,9 +211,11 @@ const handleSubmit = async (e: any) => {
             className="w-full border p-2 rounded bg-white text-black"
           >
             <option value="">-- Apply as a --</option>
-            <option value="Tutor">Tutor</option>
-            <option value="Lab Assistant">Lab Assistant</option>
-            <option value="Both">Both</option>
+            {roles.map((r) => (
+                <option key={r.id} value={r.role}>
+                  {r.role}
+                </option>
+            ))}
           </select>
         </div>
 
@@ -214,8 +232,11 @@ const handleSubmit = async (e: any) => {
             className="w-full border p-2 rounded bg-white text-black"
           >
             <option value="">Select Availability</option>
-            <option value="full-time">Full Time</option>
-            <option value="part-time">Part Time</option>
+            {availabilities.map((a) => (
+              <option key={a.id} value={a.availability}>
+                {a.availability}
+              </option>
+            ))}
           </select>
         </div>
 

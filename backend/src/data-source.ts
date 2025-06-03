@@ -5,6 +5,7 @@ import { TutorApplication } from "./entity/TutorApplication";
 import { Course } from "./entity/Course";
 import { Availability } from "./entity/Availability";
 import { Role } from "./entity/Role";
+import { CourseMapping } from "./entity/CourseMapping";
 // import { Course }  "./entity/Course"; 
 
 export const AppDataSource = new DataSource({
@@ -19,7 +20,7 @@ export const AppDataSource = new DataSource({
   // but should be disabled in production to prevent accidental data loss.
   synchronize: true,
   logging: true,
-  entities: [Users, TutorApplication, Course, Availability, Role],
+  entities: [Users, TutorApplication, Course, Availability, Role, CourseMapping],
   migrations: [],
   subscribers: [],
 });
