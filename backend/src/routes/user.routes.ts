@@ -11,6 +11,12 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   await userController.login(req, res);
 });
+router.get("/profile", async (req, res) => {
+  await userController.getProfile(req, res);
+});
 
+router.put("/profile/avatar", async (req, res) => {
+  await userController.updateAvatar(req, res);
+});
 
 export default router;

@@ -29,7 +29,9 @@ export class UserController {
     });
 
     const savedUser = await this.userRepo.save(user);
-    return res.status(201).json({ id: savedUser.id, email: savedUser.email, role: savedUser.role });
+    return res
+      .status(201)
+      .json({ id: savedUser.id, email: savedUser.email, role: savedUser.role });
   }
 
   async login(req: Request, res: Response) {
@@ -47,7 +49,49 @@ export class UserController {
 
     return res.json({
       message: `Welcome ${user.firstName}`,
-      user: { id: user.id, email: user.email, name: user.firstName, role: user.role },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.firstName,
+        role: user.role,
+        avathar: user.avatar,
+        createdAt: user.createdAt,
+      },
     });
+  }
+  async getProfile(req: Request, res: Response) {
+    const userId = Number(req.query.id);
+    if (!userId) return res.status(400).json({ message: "User ID required." });
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    return res.json({
+      id: user.id,
+      email: user.email,
+      name: user.firstName + " " + user.lastName,
+      role: user.role,
+      avatar: user.avatar,
+      joinedAt: user.createdAt,
+    });
+  }
+
+  async updateAvatar(req: Request, res: Response) {
+    const userId = Number(req.body.id); // Expecting ID in body
+    const avatarBase64 = req.body.avatar;
+
+    if (!userId || !avatarBase64)
+      return res
+        .status(400)
+        .json({ message: "User ID and avatar are required." });
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    user.avatar = avatarBase64;
+    await this.userRepo.save(user);
+
+    return res.json({ message: "Avatar updated successfully." });
   }
 }

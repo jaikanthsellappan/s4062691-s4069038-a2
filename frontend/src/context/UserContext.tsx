@@ -7,6 +7,8 @@ interface User {
   email: string;
   name: string;
   role: "tutor" | "lecturer";
+  avatar?: string; // <- ✅ should exist
+  createdAt?: string; // <- ✅ needed for date formatting
 }
 
 interface UserContextType {

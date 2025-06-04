@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import ReCAPTCHA from "react-google-recaptcha";
 import axios from "../api"; // Axios instance (make sure it's setup)
-
+import { useUser } from "@/context/UserContext";
 const SITE_KEY = "6LfJsxIrAAAAADRnyRLUfgop7CfeQ6_bPCUyyVaF";
 
 export default function SignInForm() {
@@ -14,7 +14,7 @@ export default function SignInForm() {
   const [recaptchaToken, setRecaptchaToken] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
+  const { setUser } = useUser();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -45,6 +45,7 @@ export default function SignInForm() {
       const res = await axios.post("/login", { email, password });
 
       const user = res.data.user;
+      console.log("user data from database", user);
       localStorage.setItem("tt-current-user", JSON.stringify(user));
       setSuccess(res.data.message || "Login successful!");
 

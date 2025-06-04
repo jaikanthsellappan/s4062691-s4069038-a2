@@ -4,7 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToMany
+  OneToMany,
 } from "typeorm";
 import { TutorApplication } from "./TutorApplication";
 import { CourseMapping } from "./CourseMapping";
@@ -40,10 +40,13 @@ export class Users {
   @Column({ default: true })
   isValid: boolean;
 
+  // ✅ NEW: Optional avatar image as base64 string or file reference
+  @Column({ type: "text", nullable: true })
+  avatar: string | null;
+
   @OneToMany(() => TutorApplication, (app) => app.user)
   applications: TutorApplication[];
 
   @OneToMany(() => CourseMapping, (assignment) => assignment.user)
   assignedCourses: CourseMapping[];
-
 }
