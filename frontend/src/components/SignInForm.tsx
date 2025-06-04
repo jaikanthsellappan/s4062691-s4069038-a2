@@ -15,6 +15,7 @@ export default function SignInForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const { setUser } = useUser();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -45,6 +46,9 @@ export default function SignInForm() {
       const res = await axios.post("/login", { email, password });
 
       const user = res.data.user;
+      setUser(user); // ✅ Store user in context
+      setSuccess(res.data.message || "Login successful!");
+
       console.log("user data from database", user);
       localStorage.setItem("tt-current-user", JSON.stringify(user));
       setSuccess(res.data.message || "Login successful!");

@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import LecturerTabContent from "@/components/LecturerTabContent";
 import axios from "../api";
+import { useUser } from "@/context/UserContext";
 import { Console } from "console";
 
 export default function LecturersPage() {
   const router = useRouter();
 
-  const [lecturerEmail, setLecturerEmail] = useState("");
+  const { user } = useUser();
   const [reviewData, setReviewData] = useState({});
   const [selectedApps, setSelectedApps] = useState<any[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,38 +26,30 @@ export default function LecturersPage() {
 
   // When the component loads, check if the user is logged in and load relevant data
   useEffect(() => {
-    const user = localStorage.getItem("tt-current-user");
+  if (!user) {
+    router.push("/signin");
+    return;
+  }
 
-    if (!user) {
-      alert("Please sign in to access this page.");
-      router.push("/signin");
-    } else {
-      const parsed = JSON.parse(user);
-      const email = parsed.email || "";
-      setLecturerEmail(email);
+  const email = user.email;
+  const selected = JSON.parse(
+    localStorage.getItem(`tt-selected-tutors-${email}`) || "[]"
+  );
+  setSelectedApps(selected);
 
+  const reviews = JSON.parse(
+    localStorage.getItem(`tt-review-data-${email}`) || "{}"
+  );
+  setReviewData(reviews);
 
-      const selected = JSON.parse(
-        localStorage.getItem(`tt-selected-tutors-${email}`) || "[]"
-      );
-      setSelectedApps(selected);
+  setIsAuthenticated(true);
+}, [user, router]);
 
-      const reviews = JSON.parse(
-        localStorage.getItem(`tt-review-data-${email}`) || "{}"
-      );
-      setReviewData(reviews);
-
-      setIsAuthenticated(true);
-    }
-  }, [router]);
 
   useEffect(() =>{
     const fetchApplications = async () => {
-    const user = localStorage.getItem("tt-current-user");
     if (!user) return;
-
-    const parsed = JSON.parse(user);
-    const userId = parsed.id;
+    const userId = user.id;
 
     try {
       const res = await axios.get("/tutorApplications", {
@@ -76,11 +69,9 @@ export default function LecturersPage() {
     setCurrentPage(1);
 
     if (activeTab === "selected") {
-      const lecturer = JSON.parse(
-        localStorage.getItem("tt-current-user") || "{}"
-      );
+      const lecturer = user;
       const updated = JSON.parse(
-        localStorage.getItem(`tt-selected-tutors-${lecturer.email}`) || "[]"
+        localStorage.getItem(`tt-selected-tutors-${user?.email}}`) || "[]"
       );
       setSelectedApps(updated);
     }
