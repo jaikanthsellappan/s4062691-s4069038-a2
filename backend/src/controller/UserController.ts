@@ -78,13 +78,16 @@ export class UserController {
   }
 
   async updateAvatar(req: Request, res: Response) {
-    const userId = Number(req.body.id); // Expecting ID in body
+    const userId = Number(req.body.userId); // ✅ Ensure this matches frontend
     const avatarBase64 = req.body.avatar;
 
-    if (!userId || !avatarBase64)
+    console.log("Received avatar upload for userId:", userId); // ✅ for debug
+
+    if (!userId || !avatarBase64) {
       return res
         .status(400)
         .json({ message: "User ID and avatar are required." });
+    }
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) return res.status(404).json({ message: "User not found." });

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { useUser } from "@/context/UserContext"; // ✅ fixed
+import { useUser } from "@/context/UserContext";
 import axios from "@/api";
 
 export default function UserProfile() {
@@ -9,7 +9,7 @@ export default function UserProfile() {
 
   if (!user) return null;
 
-  // Helper: Convert uploaded image to base64
+  // Convert image to base64
   const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -36,15 +36,19 @@ export default function UserProfile() {
     }
   };
 
+  const handleLogout = () => {
+    setUser(null);
+    window.location.href = "/signin";
+  };
+
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setShowCard(true)}
-      onMouseLeave={() => setShowCard(false)}
-      onClick={() => setShowCard(!showCard)}
-    >
-      {/* Round Avatar Circle */}
-      <div className="w-10 h-10 rounded-full bg-white shadow border cursor-pointer overflow-hidden">
+    <div className="relative">
+      {/* Clickable Avatar */}
+      <button
+        onClick={() => setShowCard((prev) => !prev)}
+        className="w-14 h-14 rounded-full bg-white shadow border cursor-pointer overflow-hidden focus:outline-none"
+        title="User Info"
+      >
         {user.avatar ? (
           <img
             src={`data:image/png;base64,${user.avatar}`}
@@ -56,19 +60,22 @@ export default function UserProfile() {
             {user.name?.charAt(0).toUpperCase()}
           </div>
         )}
-      </div>
+      </button>
 
-      {/* Card on hover/click */}
+      {/* Info Card - toggled by click only */}
       {showCard && (
         <div className="absolute top-12 right-0 bg-white border shadow-md rounded-md p-4 z-50 w-64 text-left text-sm">
           <p className="font-semibold text-purple-800 mb-1">{user.name}</p>
           <p className="text-gray-600 mb-1">📧 {user.email}</p>
           <p className="text-gray-600 mb-1">🎓 Role: {user.role}</p>
           <p className="text-gray-600 mb-2">
-            📅 Joined: {new Date(user.createdAt).toLocaleDateString()}
+            📅 Joined:{" "}
+            {user.createdAt
+              ? new Date(user.createdAt).toLocaleDateString()
+              : "Unknown"}
           </p>
 
-          {/* Edit avatar option for postgraduate users (optional condition) */}
+          {/* Change Avatar */}
           <button
             onClick={() => fileInputRef.current?.click()}
             className="text-purple-600 text-xs hover:underline"
@@ -82,6 +89,14 @@ export default function UserProfile() {
             className="hidden"
             onChange={handleAvatarChange}
           />
+
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="mt-3 w-full text-xs bg-red-500 text-white py-1 rounded hover:bg-red-600"
+          >
+            🚪 Logout
+          </button>
         </div>
       )}
     </div>

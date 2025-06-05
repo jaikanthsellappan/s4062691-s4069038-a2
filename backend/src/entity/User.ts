@@ -41,7 +41,7 @@ export class Users {
   isValid: boolean;
 
   // ✅ NEW: Optional avatar image as base64 string or file reference
-  @Column({ type: "text", nullable: true })
+  @Column({ type: "longtext", nullable: true })
   avatar: string | null;
 
   @OneToMany(() => TutorApplication, (app) => app.user)
