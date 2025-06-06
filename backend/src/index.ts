@@ -11,6 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
+app.use("/uploads", express.static("uploads"));
 app.use(express.json());
 app.use("/api", userRoutes);
 app.use("/api", tutorAppRoutes);

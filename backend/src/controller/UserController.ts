@@ -52,9 +52,9 @@ export class UserController {
       user: {
         id: user.id,
         email: user.email,
-        name: user.firstName,
+        name: `${user.firstName} ${user.lastName}`,
         role: user.role,
-        avathar: user.avatar,
+        avatar: user.avatar,
         createdAt: user.createdAt,
       },
     });
@@ -78,23 +78,25 @@ export class UserController {
   }
 
   async updateAvatar(req: Request, res: Response) {
-    const userId = Number(req.body.userId); // ✅ Ensure this matches frontend
-    const avatarBase64 = req.body.avatar;
+    const userId = Number(req.body.userId);
+    const file = (req as any).file; // 👈 bypass type checking here
 
-    console.log("Received avatar upload for userId:", userId); // ✅ for debug
-
-    if (!userId || !avatarBase64) {
+    if (!userId || !file) {
       return res
         .status(400)
-        .json({ message: "User ID and avatar are required." });
+        .json({ message: "User ID and avatar file are required." });
     }
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) return res.status(404).json({ message: "User not found." });
 
-    user.avatar = avatarBase64;
+    // ✅ Save the file path (e.g. /uploads/1234-avatar.png)
+    user.avatar = `/uploads/${file.filename}`;
     await this.userRepo.save(user);
 
-    return res.json({ message: "Avatar updated successfully." });
+    return res.json({
+      message: "Avatar uploaded successfully.",
+      avatar: user.avatar,
+    });
   }
 }

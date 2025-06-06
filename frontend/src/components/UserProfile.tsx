@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react"; // ✅ Added useEffect
 import { useUser } from "@/context/UserContext";
 import axios from "@/api";
 
@@ -6,7 +6,32 @@ export default function UserProfile() {
   const { user, setUser } = useUser();
   const [showCard, setShowCard] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const avatarButtonRef = useRef<HTMLButtonElement>(null);
 
+  // ✅ Detect outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        cardRef.current &&
+        !cardRef.current.contains(event.target as Node) &&
+        avatarButtonRef.current &&
+        !avatarButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowCard(false);
+      }
+    };
+
+    if (showCard) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showCard]);
   if (!user) return null;
 
   // Convert image to base64
@@ -24,13 +49,19 @@ export default function UserProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const base64 = await convertToBase64(file);
+    const formData = new FormData();
+    formData.append("userId", user.id.toString());
+    formData.append("avatar", file);
+
     try {
-      await axios.put("/profile/avatar", {
-        userId: user.id,
-        avatar: base64,
+      const response = await axios.put("/profile/avatar", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
-      setUser({ ...user, avatar: base64 });
+
+      // ✅ Update avatar in user context
+      setUser({ ...user, avatar: response.data.avatar });
     } catch (err) {
       alert("Failed to upload avatar.");
     }
@@ -45,13 +76,14 @@ export default function UserProfile() {
     <div className="relative">
       {/* Clickable Avatar */}
       <button
+        ref={avatarButtonRef}
         onClick={() => setShowCard((prev) => !prev)}
         className="w-14 h-14 rounded-full bg-white shadow border cursor-pointer overflow-hidden focus:outline-none"
         title="User Info"
       >
-        {user.avatar ? (
+        {user.avatar && user.avatar.startsWith("/uploads/") ? (
           <img
-            src={`data:image/png;base64,${user.avatar}`}
+            src={`http://localhost:3001${user.avatar}`}
             alt="avatar"
             className="w-full h-full object-cover"
           />
@@ -64,7 +96,14 @@ export default function UserProfile() {
 
       {/* Info Card - toggled by click only */}
       {showCard && (
-        <div className="absolute top-12 right-0 bg-white border shadow-md rounded-md p-4 z-50 w-64 text-left text-sm">
+        <div
+          ref={cardRef}
+          className={`absolute top-12 right-0 bg-white border shadow-md rounded-md p-4 z-50 w-64 text-left text-sm transition-all duration-300 transform ${
+            showCard
+              ? "opacity-100 scale-100"
+              : "opacity-0 scale-95 pointer-events-none"
+          }`}
+        >
           <p className="font-semibold text-purple-800 mb-1">{user.name}</p>
           <p className="text-gray-600 mb-1">📧 {user.email}</p>
           <p className="text-gray-600 mb-1">🎓 Role: {user.role}</p>
