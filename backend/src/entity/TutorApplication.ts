@@ -5,8 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany
 } from "typeorm";
 import { Users } from "./User";
+import { TutorReview } from "./TutorReview";
 
 @Entity()
 export class TutorApplication {
@@ -42,4 +44,7 @@ export class TutorApplication {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => TutorReview, (review) => review.application)
+  reviews: TutorReview[];
 }

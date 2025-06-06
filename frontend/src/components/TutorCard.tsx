@@ -1,45 +1,51 @@
 import React, { useEffect, useState } from "react";
 
-export default function TutorCard({ tutor }: { tutor: any }) {
+interface TutorCardProps {
+  tutor: any;
+  selectedApps: any[];
+  setSelectedApps: React.Dispatch<React.SetStateAction<any[]>>;
+  lecturerEmail: string;
+}
+
+export default function TutorCard({
+  tutor,
+  selectedApps,
+  setSelectedApps,
+  lecturerEmail,
+}: TutorCardProps) {
   const [isSelected, setIsSelected] = useState(false);
 
-  // Get the currently logged-in lecturer from localStorage
-  const lecturer = JSON.parse(localStorage.getItem("tt-current-user") || "{}");
-
-  // Check if the tutor has already been selected by this lecturer
+  // Set initial selection state based on props
   useEffect(() => {
-    const key = `tt-selected-tutors-${lecturer.email}`;
-    const lecturerSelections = JSON.parse(localStorage.getItem(key) || "[]");
+  if (!Array.isArray(selectedApps)) return; // safeguard
 
-    const alreadySelected = lecturerSelections.some(
-      (t: any) => t.email === tutor.email && t.courseCode === tutor.courseCode
-    );
+  const alreadySelected = selectedApps.some(
+    (t) => t.email === tutor.email && t.courseCode === tutor.courseCode
+  );
+  setIsSelected(alreadySelected);
+}, [selectedApps, tutor.email, tutor.courseCode]);
 
-    setIsSelected(alreadySelected);
-  }, [tutor.email, tutor.courseCode, lecturer.email]);
-
-  // Handles adding or removing the tutor from the selection list
+  // Toggle selection
   const handleToggleSelect = () => {
-    const key = `tt-selected-tutors-${lecturer.email}`;
-    const lecturerSelections = JSON.parse(localStorage.getItem(key) || "[]");
+  const key = `tt-selected-tutors-${lecturerEmail}`;
+  const currentSelections = Array.isArray(selectedApps) ? selectedApps : [];
 
-    let updatedSelections;
+  let updatedSelections;
 
-    if (isSelected) {
-      // Remove tutor from selection
-      updatedSelections = lecturerSelections.filter(
-        (t: any) =>
-          !(t.email === tutor.email && t.courseCode === tutor.courseCode)
-      );
-    } else {
-      // Add tutor to selection
-      updatedSelections = [...lecturerSelections, tutor];
-    }
+  if (isSelected) {
+    // Remove tutor from selection
+    updatedSelections = currentSelections.filter(
+      (t) => !(t.email === tutor.email && t.courseCode === tutor.courseCode)
+    );
+  } else {
+    // Add tutor to selection
+    updatedSelections = [...currentSelections, tutor];
+  }
 
-    localStorage.setItem(key, JSON.stringify(updatedSelections));
-    setIsSelected(!isSelected); // Flip selection state
-  };
-
+  setSelectedApps(updatedSelections);
+  localStorage.setItem(key, JSON.stringify(updatedSelections));
+  setIsSelected(!isSelected);
+};
   return (
     <div className="bg-white rounded-lg shadow-md p-5 border border-purple-200 flex flex-col justify-between h-full">
       <div>
@@ -47,12 +53,10 @@ export default function TutorCard({ tutor }: { tutor: any }) {
         <h2 className="text-xl font-bold text-purple-700 mb-1">{tutor.name}</h2>
         <p className="text-sm text-gray-600 mb-1">📧 {tutor.email}</p>
         <p className="text-sm text-gray-600 mb-1">
-          📘 <strong>{tutor.courseCode}</strong> – {tutor.courseName} (
-          {tutor.role})
+          📘 <strong>{tutor.courseCode}</strong> – {tutor.courseName} ({tutor.role})
         </p>
         <p className="text-sm text-gray-600 mb-1">
-          🕒 Availability:{" "}
-          <span className="font-medium">{tutor.availability}</span>
+          🕒 Availability: <span className="font-medium">{tutor.availability}</span>
         </p>
         <p className="text-sm text-gray-600 mb-1">
           💼 Previous Roles: {tutor.previousRoles}

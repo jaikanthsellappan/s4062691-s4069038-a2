@@ -72,8 +72,18 @@ async getAll(req: Request, res: Response) {
       relations: ["user"], // fetch user info (foreign key relation)
       order: { createdAt: "DESC" }, // optional: latest first
     });
+    // Only return selected user fields in each application
+    const filtered = applications.map((app) => ({
+      ...app,
+      user: {
+        id: app.user.id,
+        firstName: app.user.firstName,
+        lastName: app.user.lastName,
+        email: app.user.email,
+      },
+    }));
 
-    return res.status(200).json(applications);
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching tutor applications:", error);
     return res.status(500).json({ message: "Failed to retrieve applications" });
@@ -107,7 +117,18 @@ async getFilteredApplications(req: Request, res: Response) {
       order: { createdAt: "DESC" },
     });
 
-    return res.status(200).json(applications);
+    // Only return selected user fields in each application
+    const filtered = applications.map((app) => ({
+      ...app,
+      user: {
+        id: app.user.id,
+        firstName: app.user.firstName,
+        lastName: app.user.lastName,
+        email: app.user.email,
+      },
+    }));
+
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching tutor applications:", error);
     return res.status(500).json({ message: "Failed to retrieve applications" });

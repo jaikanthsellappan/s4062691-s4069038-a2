@@ -7,6 +7,8 @@ export default function LecturerTabContent({
   activeTab,
   paginated,
   selectedApps,
+  setSelectedApps,
+  lecturerEmail,
   allApplications,
   reviewData,
   currentPage,
@@ -64,8 +66,14 @@ export default function LecturerTabContent({
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {paginated.map((app: any, index: number) => (
-              <TutorCard key={index} tutor={app} />
-            ))}
+            <TutorCard
+              key={index}
+              tutor={app}
+              selectedApps={selectedApps}
+              setSelectedApps={setSelectedApps}
+              lecturerEmail={lecturerEmail}
+            />
+          ))}
           </div>
 
           {/* Page navigation */}

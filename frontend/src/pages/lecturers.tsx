@@ -22,6 +22,7 @@ export default function LecturersPage() {
   const [tutorName, setTutorName] = useState("");
   const [skill, setSkill] = useState("");
   const [availability, setAvailability] = useState("");
+  const [tutorApplications, setTutorApplications] = useState<any[]>([]);
   const [sortField] = useState("course");
 
   // When the component loads, check if the user is logged in and load relevant data
@@ -49,13 +50,19 @@ export default function LecturersPage() {
   useEffect(() =>{
     const fetchApplications = async () => {
     if (!user) return;
-    const userId = user.id;
-
     try {
       const res = await axios.get("/tutorApplications", {
-        params: { userId }
+        params: { userId: user.id },
       });
-      console.log("tutor applications from database",res.data);
+
+      // Flatten and add `name` and `email` for filtering
+      const appsWithMeta = res.data.map((app: any) => ({
+        ...app,
+        name: `${app.user.firstName} ${app.user.lastName}`,
+        email: app.user.email,
+      }));
+
+      setTutorApplications(appsWithMeta);
     } catch (err) {
       console.error("Failed to fetch tutor applications", err);
     }
@@ -71,7 +78,7 @@ export default function LecturersPage() {
     if (activeTab === "selected") {
       const lecturer = user;
       const updated = JSON.parse(
-        localStorage.getItem(`tt-selected-tutors-${user?.email}}`) || "[]"
+        localStorage.getItem(`tt-selected-tutors-${user?.email}`) || "[]"
       );
       setSelectedApps(updated);
     }
@@ -126,17 +133,7 @@ export default function LecturersPage() {
   if (!isAuthenticated) return null;
 
   // Load all tutor applications
-  const rawApplications = JSON.parse(
-    localStorage.getItem("tt-tutor-applications") || "[]"
-  );
-
-  const allApplications = rawApplications.flatMap((tutor: any) =>
-    tutor.applications.map((app: any) => ({
-      ...app,
-      email: tutor.email,
-      name: tutor.name,
-    }))
-  );
+  const allApplications = tutorApplications;
 
   // Apply filtering logic
   const filtered = allApplications.filter((app: any) => {
@@ -268,6 +265,8 @@ export default function LecturersPage() {
             activeTab={activeTab}
             paginated={paginated}
             selectedApps={selectedApps}
+            setSelectedApps={setSelectedApps} // NEW
+            lecturerEmail={user?.email || ""} // NEW
             allApplications={allApplications}
             reviewData={reviewData}
             currentPage={currentPage}
