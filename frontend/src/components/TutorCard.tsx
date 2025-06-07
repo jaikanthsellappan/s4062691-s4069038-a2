@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-
+import axios from "@/api";
+import { useUser } from "@/context/UserContext";
 interface TutorCardProps {
   tutor: any;
   selectedApps: any[];
@@ -17,35 +18,50 @@ export default function TutorCard({
 
   // Set initial selection state based on props
   useEffect(() => {
-  if (!Array.isArray(selectedApps)) return; // safeguard
+    if (!Array.isArray(selectedApps)) return; // safeguard
 
-  const alreadySelected = selectedApps.some(
-    (t) => t.email === tutor.email && t.courseCode === tutor.courseCode
-  );
-  setIsSelected(alreadySelected);
-}, [selectedApps, tutor.email, tutor.courseCode]);
-
-  // Toggle selection
-  const handleToggleSelect = () => {
-  const key = `tt-selected-tutors-${lecturerEmail}`;
-  const currentSelections = Array.isArray(selectedApps) ? selectedApps : [];
-
-  let updatedSelections;
-
-  if (isSelected) {
-    // Remove tutor from selection
-    updatedSelections = currentSelections.filter(
-      (t) => !(t.email === tutor.email && t.courseCode === tutor.courseCode)
+    const alreadySelected = selectedApps.some(
+      (t) => t.email === tutor.email && t.courseCode === tutor.courseCode
     );
-  } else {
-    // Add tutor to selection
-    updatedSelections = [...currentSelections, tutor];
-  }
+    setIsSelected(alreadySelected);
+  }, [selectedApps, tutor.email, tutor.courseCode]);
+  // Inside your component
+  const { user } = useUser(); // Access the logged-in lecturer
 
-  setSelectedApps(updatedSelections);
-  localStorage.setItem(key, JSON.stringify(updatedSelections));
-  setIsSelected(!isSelected);
-};
+  const handleToggleSelect = async () => {
+    const key = `tt-selected-tutors-${lecturerEmail}`;
+    const currentSelections = Array.isArray(selectedApps) ? selectedApps : [];
+
+    let updatedSelections;
+
+    if (isSelected) {
+      // Remove tutor from selection
+      updatedSelections = currentSelections.filter(
+        (t) => !(t.email === tutor.email && t.courseCode === tutor.courseCode)
+      );
+
+      // ✅ Call backend to delete the review
+      try {
+        await axios.post("/tutor-reviews/delete", {
+          userId: user?.id,
+          applicationId: tutor.applicationId,
+        });
+        console.log("✅ Review deleted on unselect");
+      } catch (err) {
+        console.error("❌ Failed to delete review:", err);
+      }
+    } else {
+      // Add tutor to selection
+      updatedSelections = [...currentSelections, tutor];
+    }
+
+    setSelectedApps(updatedSelections);
+    localStorage.setItem(key, JSON.stringify(updatedSelections));
+    setIsSelected(!isSelected);
+
+    // Optionally refresh visual dashboard
+    window.dispatchEvent(new CustomEvent("refresh-visual-analysis"));
+  };
   return (
     <div className="bg-white rounded-lg shadow-md p-5 border border-purple-200 flex flex-col justify-between h-full">
       <div>
@@ -53,10 +69,12 @@ export default function TutorCard({
         <h2 className="text-xl font-bold text-purple-700 mb-1">{tutor.name}</h2>
         <p className="text-sm text-gray-600 mb-1">📧 {tutor.email}</p>
         <p className="text-sm text-gray-600 mb-1">
-          📘 <strong>{tutor.courseCode}</strong> – {tutor.courseName} ({tutor.role})
+          📘 <strong>{tutor.courseCode}</strong> – {tutor.courseName} (
+          {tutor.role})
         </p>
         <p className="text-sm text-gray-600 mb-1">
-          🕒 Availability: <span className="font-medium">{tutor.availability}</span>
+          🕒 Availability:{" "}
+          <span className="font-medium">{tutor.availability}</span>
         </p>
         <p className="text-sm text-gray-600 mb-1">
           💼 Previous Roles: {tutor.previousRoles}

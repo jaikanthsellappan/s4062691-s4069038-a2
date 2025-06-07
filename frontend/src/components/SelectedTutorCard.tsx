@@ -1,33 +1,97 @@
 import React from "react";
 import { useEffect, useState } from "react";
+import { useUser } from "@/context/UserContext";
+import axios from "@/api"; // Already configured
 
-export default function SelectedTutorCard({ tutor }: { tutor: any }) {
+export default function SelectedTutorCard({
+  tutor,
+  onUnselect, // ✅ declare it
+}: {
+  tutor: any;
+  onUnselect?: () => void; // ✅ just define the type, don't use it inside
+}) {
   const [rank, setRank] = useState(""); // Stores the tutor's rank input
   const [comment, setComment] = useState(""); // Stores the tutor's comment
 
   // Create a unique key for saving review data in localStorage
   const key = `${tutor.email}-${tutor.courseCode}`;
 
-  // Get the currently logged-in lecturer's email
-  const lecturer = JSON.parse(localStorage.getItem("tt-current-user") || "{}");
-  const lecturerEmail = lecturer?.email;
-  const storageKey = `tt-review-data-${lecturerEmail}`;
+  // // Get the currently logged-in lecturer's email
+  // const lecturer = JSON.parse(localStorage.getItem("tt-current-user") || "{}");
+  // const lecturerEmail = lecturer?.email;
+  // const storageKey = `tt-review-data-${lecturerEmail}`;
 
-  // Load existing review data (rank and comment) for this tutor, if available
+  const { user } = useUser(); // ✅ get lecturer info from context
+
+  // // Load existing review data (rank and comment) for this tutor, if available
+  // useEffect(() => {
+  //   const reviewData = JSON.parse(localStorage.getItem(storageKey) || "{}");
+  //   if (reviewData[key]) {
+  //     setRank(reviewData[key].rank);
+  //     setComment(reviewData[key].comment);
+  //   }
+  // }, [key, storageKey]);
   useEffect(() => {
-    const reviewData = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    if (reviewData[key]) {
-      setRank(reviewData[key].rank);
-      setComment(reviewData[key].comment);
-    }
-  }, [key, storageKey]);
+    if (!user) return;
+    const fetchReview = async () => {
+      try {
+        const response = await axios.get("/tutor-reviews");
+        const allReviews = response.data;
 
-  // Save updated rank and comment to localStorage and trigger visual dashboard refresh
-  const saveReview = () => {
-    const reviewData = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    reviewData[key] = { rank, comment };
-    localStorage.setItem(storageKey, JSON.stringify(reviewData));
-    window.dispatchEvent(new CustomEvent("refresh-visual-analysis"));
+        // Find this tutor's review by this lecturer
+        const review = allReviews.find(
+          (r: any) =>
+            r.user?.id === user.id &&
+            r.application?.applicationId === tutor.applicationId
+        );
+
+        if (review) {
+          setRank(review.rank.toString());
+          setComment(review.comment);
+        }
+      } catch (error) {
+        console.error("Error loading review:", error);
+      }
+    };
+
+    if (user?.id) {
+      fetchReview();
+    }
+  }, [user, tutor]);
+  if (!user) return null;
+
+  // // Save updated rank and comment to localStorage and trigger visual dashboard refresh
+  // const saveReview = () => {
+  //   const reviewData = JSON.parse(localStorage.getItem(storageKey) || "{}");
+  //   reviewData[key] = { rank, comment };
+  //   localStorage.setItem(storageKey, JSON.stringify(reviewData));
+  //   window.dispatchEvent(new CustomEvent("refresh-visual-analysis"));
+  // };
+  const saveReview = async () => {
+    try {
+      // Dummy save to localStorage
+      const dummy = JSON.parse(
+        localStorage.getItem(`tt-review-data-${user.email}`) || "{}"
+      );
+      dummy[`${tutor.email}-${tutor.courseCode}`] = { rank, comment };
+      localStorage.setItem(
+        `tt-review-data-${user.email}`,
+        JSON.stringify(dummy)
+      );
+
+      // Real save to backend
+      await axios.post("/tutor-reviews", {
+        userId: user.id,
+        applicationId: tutor.applicationId, // ✅ This must be passed from tutor data
+        rank: Number(rank),
+        comment,
+      });
+
+      // Notify visual analysis to re-fetch
+      window.dispatchEvent(new CustomEvent("refresh-visual-analysis"));
+    } catch (error) {
+      console.error("Failed to save review", error);
+    }
   };
 
   // Only accept numbers from 1 to 10 for ranking

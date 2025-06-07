@@ -9,7 +9,7 @@ export default function LecturersPage() {
   const router = useRouter();
 
   const { user } = useUser();
-  const [reviewData, setReviewData] = useState({});
+  const [reviewData, setReviewData] = useState<any[]>([]);
   const [selectedApps, setSelectedApps] = useState<any[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState("applications");
@@ -27,49 +27,47 @@ export default function LecturersPage() {
 
   // When the component loads, check if the user is logged in and load relevant data
   useEffect(() => {
-  if (!user) {
-    router.push("/signin");
-    return;
-  }
-
-  const email = user.email;
-  const selected = JSON.parse(
-    localStorage.getItem(`tt-selected-tutors-${email}`) || "[]"
-  );
-  setSelectedApps(selected);
-
-  const reviews = JSON.parse(
-    localStorage.getItem(`tt-review-data-${email}`) || "{}"
-  );
-  setReviewData(reviews);
-
-  setIsAuthenticated(true);
-}, [user, router]);
-
-
-  useEffect(() =>{
-    const fetchApplications = async () => {
-    if (!user) return;
-    try {
-      const res = await axios.get("/tutorApplications", {
-        params: { userId: user.id },
-      });
-
-      // Flatten and add `name` and `email` for filtering
-      const appsWithMeta = res.data.map((app: any) => ({
-        ...app,
-        name: `${app.user.firstName} ${app.user.lastName}`,
-        email: app.user.email,
-      }));
-
-      setTutorApplications(appsWithMeta);
-    } catch (err) {
-      console.error("Failed to fetch tutor applications", err);
+    if (!user) {
+      router.push("/signin");
+      return;
     }
-  };
-  fetchApplications();
 
-  },[])
+    const email = user.email;
+    const selected = JSON.parse(
+      localStorage.getItem(`tt-selected-tutors-${email}`) || "[]"
+    );
+    setSelectedApps(selected);
+
+    const reviews = JSON.parse(
+      localStorage.getItem(`tt-review-data-${email}`) || "{}"
+    );
+    setReviewData(reviews);
+
+    setIsAuthenticated(true);
+  }, [user, router]);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      if (!user) return;
+      try {
+        const res = await axios.get("/tutorApplications", {
+          params: { userId: user.id },
+        });
+
+        // Flatten and add `name` and `email` for filtering
+        const appsWithMeta = res.data.map((app: any) => ({
+          ...app,
+          name: `${app.user.firstName} ${app.user.lastName}`,
+          email: app.user.email,
+        }));
+
+        setTutorApplications(appsWithMeta);
+      } catch (err) {
+        console.error("Failed to fetch tutor applications", err);
+      }
+    };
+    fetchApplications();
+  }, []);
 
   // When changing tabs, refresh the list of selected tutors
   useEffect(() => {
@@ -100,35 +98,36 @@ export default function LecturersPage() {
 
   // If viewing visual analysis, collect all rankings from each lecturer and average them
   useEffect(() => {
-    const updatedReviewData: Record<string, any[]> = {};
+    const fetchReviewData = async () => {
+      if (activeTab === "visual" && user) {
+        try {
+          const res = await axios.get("/tutor-reviews");
 
-    if (activeTab === "visual") {
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith("tt-review-data-")) {
-          const lecturerData = JSON.parse(localStorage.getItem(key) || "{}");
-          Object.entries(lecturerData).forEach(([k, v]) => {
-            if (!updatedReviewData[k]) updatedReviewData[k] = [];
-            updatedReviewData[k].push(v);
+          // 🚨 HACK: match applicationId with allApplications to get actual email/courseCode
+          const reviewRaw = res.data;
+          const withMeta = reviewRaw.map((r: any) => {
+            const matchingApp = tutorApplications.find(
+              (a) => a.applicationId === r.application?.applicationId
+            );
+            return {
+              ...r,
+              application: {
+                email: matchingApp?.email ?? "",
+                courseCode: matchingApp?.courseCode ?? "",
+              },
+            };
           });
-        }
-      });
 
-      setReviewData(() => {
-        const merged: Record<string, any> = {};
-        Object.entries(updatedReviewData).forEach(([key, allRanks]) => {
-          const avg =
-            Math.round(
-              allRanks.reduce(
-                (sum: number, r: any) => sum + Number(r.rank || 0),
-                0
-              ) / allRanks.length
-            ) || 0;
-          merged[key] = { ...allRanks[0], rank: avg };
-        });
-        return merged;
-      });
-    }
-  }, [activeTab]);
+          setReviewData(withMeta);
+          console.log("✅ Transformed reviewData for frontend:", withMeta);
+        } catch (err) {
+          console.error("Failed to fetch review data:", err);
+        }
+      }
+    };
+
+    fetchReviewData();
+  }, [activeTab, user, tutorApplications]);
 
   if (!isAuthenticated) return null;
 
@@ -180,6 +179,25 @@ export default function LecturersPage() {
     setSkill("");
     setAvailability("");
     setCurrentPage(1);
+  };
+  const handleUnselectTutor = async (tutor: any) => {
+    const updated = selectedApps.filter(
+      (s) => !(s.email === tutor.email && s.courseCode === tutor.courseCode)
+    );
+    setSelectedApps(updated);
+
+    try {
+      if (!user) return;
+      await axios.delete("/tutor-reviews", {
+        data: {
+          userId: user.id,
+          applicationId: tutor.applicationId, // This must exist in each tutor object
+        },
+      });
+      console.log("✅ Review deleted for", tutor.email, tutor.courseCode);
+    } catch (err) {
+      console.error("❌ Failed to delete review:", err);
+    }
   };
 
   return (
@@ -272,6 +290,7 @@ export default function LecturersPage() {
             currentPage={currentPage}
             totalPages={totalPages}
             setCurrentPage={setCurrentPage}
+            handleUnselectTutor={handleUnselectTutor}
           />
         </div>
       </div>

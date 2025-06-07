@@ -11,6 +11,7 @@ export class TutorReviewController {
 
   // POST /tutor-reviews
   async submit(req: Request, res: Response) {
+    console.log("Incoming Review:", req.body); // 👈 Add this line
     const { userId, applicationId, rank, comment } = req.body;
 
     if (!userId || !applicationId || rank === undefined) {
@@ -22,7 +23,9 @@ export class TutorReviewController {
       const application = await this.appRepo.findOneBy({ applicationId });
 
       if (!user || !application) {
-        return res.status(404).json({ message: "User or application not found." });
+        return res
+          .status(404)
+          .json({ message: "User or application not found." });
       }
 
       let review = await this.reviewRepo.findOne({
@@ -61,6 +64,48 @@ export class TutorReviewController {
     } catch (error) {
       console.error("Error fetching reviews:", error);
       return res.status(500).json({ message: "Failed to retrieve reviews." });
+    }
+  }
+  // DELETE /tutor-reviews
+  async delete(req: Request, res: Response) {
+    const { userId, applicationId } = req.body;
+
+    if (!userId || !applicationId) {
+      return res
+        .status(400)
+        .json({ message: "Missing userId or applicationId." });
+    }
+
+    try {
+      const user = await this.userRepo.findOneBy({ id: userId });
+      const application = await this.appRepo.findOneBy({
+        applicationId: Number(applicationId),
+      });
+
+      if (!user || !application) {
+        return res
+          .status(404)
+          .json({ message: "User or application not found." });
+      }
+
+      const review = await this.reviewRepo.findOne({
+        where: {
+          user,
+          application,
+        },
+        relations: ["user", "application"],
+      });
+
+      if (!review) {
+        return res.status(404).json({ message: "Review not found." });
+      }
+
+      await this.reviewRepo.remove(review);
+
+      return res.status(200).json({ message: "Review deleted successfully." });
+    } catch (error) {
+      console.error("Failed to delete review:", error);
+      return res.status(500).json({ message: "Failed to delete review." });
     }
   }
 }

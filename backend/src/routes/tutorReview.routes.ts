@@ -11,5 +11,10 @@ router.post("/tutor-reviews", async (req, res) => {
 router.get("/tutor-reviews", async (req, res) => {
   await controller.getAll(req, res);
 });
+// ✅ Use POST for deletion to ensure body is parsed correctly
+router.post("/tutor-reviews/delete", async (req, res) => {
+  console.log("✅ DELETE route hit!");
+  await controller.delete(req, res);
+});
 
 export default router;
