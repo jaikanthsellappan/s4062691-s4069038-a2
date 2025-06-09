@@ -32,17 +32,6 @@ export default function LecturersPage() {
       return;
     }
 
-    const email = user.email;
-    const selected = JSON.parse(
-      localStorage.getItem(`tt-selected-tutors-${email}`) || "[]"
-    );
-    setSelectedApps(selected);
-
-    const reviews = JSON.parse(
-      localStorage.getItem(`tt-review-data-${email}`) || "{}"
-    );
-    setReviewData(reviews);
-
     setIsAuthenticated(true);
   }, [user, router]);
 
@@ -84,18 +73,47 @@ export default function LecturersPage() {
 
   // Refresh the visual tab view when ranking data is updated
   useEffect(() => {
-    const handleRefresh = () => {
-      if (activeTab === "visual") {
-        setActiveTab("");
-        setTimeout(() => setActiveTab("visual"), 0);
+    const fetchReviewData = async () => {
+      if (!user) return;
+
+      try {
+        const res = await axios.get("/tutor-reviews", {
+          params: { userId: user.id },
+        });
+
+        const reviewRaw = res.data;
+        const withMeta = reviewRaw.map((r: any) => {
+          const matchingApp = tutorApplications.find(
+            (a) => a.applicationId === r.application?.applicationId
+          );
+          return {
+            ...r,
+            application: {
+              email: matchingApp?.email ?? "",
+              courseCode: matchingApp?.courseCode ?? "",
+            },
+          };
+        });
+
+        setReviewData(withMeta);
+        console.log("✅ Review data updated:", withMeta);
+      } catch (err) {
+        console.error("❌ Failed to fetch review data", err);
       }
     };
 
-    window.addEventListener("refresh-visual-analysis", handleRefresh);
-    return () =>
-      window.removeEventListener("refresh-visual-analysis", handleRefresh);
-  }, [activeTab]);
+    // Load initially
+    if (activeTab === "visual") {
+      fetchReviewData();
+    }
 
+    // Listen for refresh event
+    const handleRefresh = () => fetchReviewData();
+    window.addEventListener("refresh-visual-analysis", handleRefresh);
+    return () => {
+      window.removeEventListener("refresh-visual-analysis", handleRefresh);
+    };
+  }, [activeTab, tutorApplications, user]);
   // If viewing visual analysis, collect all rankings from each lecturer and average them
   useEffect(() => {
     const fetchReviewData = async () => {

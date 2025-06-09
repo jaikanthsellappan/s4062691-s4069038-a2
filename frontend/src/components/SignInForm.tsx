@@ -50,7 +50,7 @@ export default function SignInForm() {
       setSuccess(res.data.message || "Login successful!");
 
       console.log("user data from database", user);
-      localStorage.setItem("tt-current-user", JSON.stringify(user));
+
       setSuccess(res.data.message || "Login successful!");
 
       // Redirect to the correct dashboard

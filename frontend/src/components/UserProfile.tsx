@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react"; // ✅ Added useEffect
 import { useUser } from "@/context/UserContext";
 import axios from "@/api";
+import { useRouter } from "next/router";
 
 export default function UserProfile() {
   const { user, setUser } = useUser();
@@ -8,6 +9,7 @@ export default function UserProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const avatarButtonRef = useRef<HTMLButtonElement>(null);
+  const router = useRouter();
 
   // ✅ Detect outside click
   useEffect(() => {
@@ -69,7 +71,7 @@ export default function UserProfile() {
 
   const handleLogout = () => {
     setUser(null);
-    window.location.href = "/signin";
+    router.push("/signin");
   };
 
   return (
