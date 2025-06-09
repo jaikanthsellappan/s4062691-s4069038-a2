@@ -1,6 +1,10 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, CreateDateColumn, UpdateDateColumn
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from "typeorm";
 import { Users } from "./User";
 import { TutorApplication } from "./TutorApplication";
@@ -16,11 +20,11 @@ export class TutorReview {
   @ManyToOne(() => TutorApplication)
   application: TutorApplication;
 
-  @Column()
-  rank: number;
+  @Column({ type: "int", nullable: true }) // ✅ DB nullable
+  rank: number | null; // ✅ TypeScript also knows it can be null
 
   @Column({ type: "text", nullable: true })
-  comment: string;
+  comment: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

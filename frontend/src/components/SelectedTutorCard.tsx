@@ -46,8 +46,8 @@ export default function SelectedTutorCard({
         );
 
         if (review) {
-          setRank(review.rank.toString());
-          setComment(review.comment);
+          setRank(review.rank ? review.rank.toString() : ""); // ✅ allow null
+          setComment(review.comment || ""); // ✅ allow null
         }
       } catch (error) {
         console.error("Error loading review:", error);

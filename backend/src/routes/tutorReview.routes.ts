@@ -11,10 +11,10 @@ router.post("/tutor-reviews", async (req, res) => {
 router.get("/tutor-reviews", async (req, res) => {
   await controller.getAll(req, res);
 });
-// ✅ Use POST for deletion to ensure body is parsed correctly
+// ✅ Soft-delete: clear rank and comment instead of removing row
 router.post("/tutor-reviews/delete", async (req, res) => {
-  console.log("✅ DELETE route hit!");
-  await controller.delete(req, res);
+  console.log("🔁 Soft delete route hit");
+  await controller.delete(req, res); // This will now soft delete
 });
 
 export default router;

@@ -66,7 +66,8 @@ export class TutorReviewController {
       return res.status(500).json({ message: "Failed to retrieve reviews." });
     }
   }
-  // DELETE /tutor-reviews
+
+  // POST /tutor-reviews/delete
   async delete(req: Request, res: Response) {
     const { userId, applicationId } = req.body;
 
@@ -77,21 +78,10 @@ export class TutorReviewController {
     }
 
     try {
-      const user = await this.userRepo.findOneBy({ id: userId });
-      const application = await this.appRepo.findOneBy({
-        applicationId: Number(applicationId),
-      });
-
-      if (!user || !application) {
-        return res
-          .status(404)
-          .json({ message: "User or application not found." });
-      }
-
       const review = await this.reviewRepo.findOne({
         where: {
-          user,
-          application,
+          user: { id: userId },
+          application: { applicationId: Number(applicationId) },
         },
         relations: ["user", "application"],
       });
@@ -100,12 +90,18 @@ export class TutorReviewController {
         return res.status(404).json({ message: "Review not found." });
       }
 
-      await this.reviewRepo.remove(review);
+      // Soft delete – set values to null
+      review.rank = null;
+      review.comment = null;
 
-      return res.status(200).json({ message: "Review deleted successfully." });
+      await this.reviewRepo.save(review); // not remove()
+
+      return res
+        .status(200)
+        .json({ message: "Review cleared (soft deleted)." });
     } catch (error) {
-      console.error("Failed to delete review:", error);
-      return res.status(500).json({ message: "Failed to delete review." });
+      console.error("Failed to soft delete review:", error);
+      return res.status(500).json({ message: "Failed to soft delete review." });
     }
   }
 }
