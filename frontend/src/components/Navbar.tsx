@@ -2,40 +2,18 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { useUser } from "@/context/UserContext";
 
 export default function Navbar() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    // Check if a user is signed in based on localStorage
-    const checkLogin = () => {
-      const user = localStorage.getItem("tt-current-user");
-      setIsAuthenticated(!!user); // true if user exists, false otherwise
-    };
-
-    checkLogin(); // Run it once when the page loads
-
-    // Watch for route or storage changes to re-check login status
-    const handleStorageChange = () => checkLogin();
-    router.events?.on("routeChangeComplete", checkLogin);
-    window.addEventListener("storage", handleStorageChange);
-
-    // Clean up event listeners when component unmounts
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      router.events?.off("routeChangeComplete", checkLogin);
-    };
-  }, [router]);
+  const { user } = useUser();
 
   // If user is not logged in, block access to protected pages
   const handleProtectedClick = (e: any, path: string) => {
-    const user = localStorage.getItem("tt-current-user");
-
     if (!user) {
-      e.preventDefault(); // stop the page from navigating
+      e.preventDefault();
       alert("⚠️ Please sign in to access this page.");
-      router.push("/signin"); // redirect to login
+      router.push("/signin");
     }
   };
 

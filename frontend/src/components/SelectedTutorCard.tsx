@@ -46,8 +46,8 @@ export default function SelectedTutorCard({
         );
 
         if (review) {
-          setRank(review.rank.toString());
-          setComment(review.comment);
+          setRank(review.rank ? review.rank.toString() : ""); // ✅ allow null
+          setComment(review.comment || ""); // ✅ allow null
         }
       } catch (error) {
         console.error("Error loading review:", error);
@@ -69,7 +69,15 @@ export default function SelectedTutorCard({
   // };
   const saveReview = async () => {
     try {
-      // Dummy save to localStorage
+      const parsedRank = Number(rank);
+
+      // Prevent save if rank is empty, invalid, or out of bounds
+      if (!rank || isNaN(parsedRank) || parsedRank < 1 || parsedRank > 10) {
+        console.warn("⛔️ Invalid or empty rank. Skipping save.");
+        return;
+      }
+
+      // Dummy save to localStorage (optional/fallback)
       const dummy = JSON.parse(
         localStorage.getItem(`tt-review-data-${user.email}`) || "{}"
       );
@@ -79,18 +87,18 @@ export default function SelectedTutorCard({
         JSON.stringify(dummy)
       );
 
-      // Real save to backend
+      // Save to backend
       await axios.post("/tutor-reviews", {
         userId: user.id,
-        applicationId: tutor.applicationId, // ✅ This must be passed from tutor data
-        rank: Number(rank),
+        applicationId: tutor.applicationId,
+        rank: parsedRank,
         comment,
       });
 
-      // Notify visual analysis to re-fetch
+      // Trigger refresh for visual dashboard
       window.dispatchEvent(new CustomEvent("refresh-visual-analysis"));
     } catch (error) {
-      console.error("Failed to save review", error);
+      console.error("❌ Failed to save review", error);
     }
   };
 
