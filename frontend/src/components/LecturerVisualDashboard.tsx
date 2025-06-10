@@ -26,41 +26,46 @@ export default function LecturerVisualDashboard({
 }) {
   const getKey = (t: any) => `${t.email}-${t.courseCode}`;
 
-  const selectedWithRank =
-    Array.isArray(reviewData) && Array.isArray(selectedApps)
-      ? selectedApps
-          .map((t: any) => {
-            const tutorReviews = reviewData.filter(
-              (r: any) =>
-                r?.application?.email === t.email &&
-                r?.application?.courseCode === t.courseCode
-            );
+  const selectedWithRank = selectedApps
+    .map((t: any) => {
+      const tutorEmail =
+        t.email || t.application?.user?.email || t.application?.email;
+      const tutorCourse = t.courseCode || t.application?.courseCode;
 
-            const avgRank =
-              tutorReviews.length > 0
-                ? Math.round(
-                    tutorReviews.reduce(
-                      (sum, r) => sum + Number(r.rank || 0),
-                      0
-                    ) / tutorReviews.length
-                  )
-                : 0;
+      const tutorReviews = reviewData.filter(
+        (r: any) =>
+          r.application?.email === tutorEmail &&
+          r.application?.courseCode === tutorCourse
+      );
 
-            return { ...t, rank: avgRank };
-          })
-          .filter((t) => t.rank > 0)
-          .sort((a, b) => b.rank - a.rank)
-      : [];
+      const avgRank =
+        tutorReviews.length > 0
+          ? Math.round(
+              tutorReviews.reduce((sum, r) => sum + Number(r.rank || 0), 0) /
+                tutorReviews.length
+            )
+          : 0;
+
+      return { ...t, rank: avgRank };
+    })
+    .filter((t: any) => t.rank > 0)
+    .sort((a: any, b: any) => b.rank - a.rank);
 
   const mostSelected = selectedWithRank[0];
   const leastSelected = selectedWithRank[selectedWithRank.length - 1];
 
-  const notSelected = allApplications.filter(
-    (app: any) =>
-      !selectedApps.some(
-        (s: any) => s.email === app.email && s.courseCode === app.courseCode
-      )
-  );
+  const notSelected = allApplications.filter((app: any) => {
+    const appEmail =
+      app.email || app.user?.email || app.application?.user?.email;
+    const appCourse = app.courseCode || app.application?.courseCode;
+
+    return !selectedApps.some((s: any) => {
+      const selEmail =
+        s.email || s.application?.user?.email || s.application?.email;
+      const selCourse = s.courseCode || s.application?.courseCode;
+      return selEmail === appEmail && selCourse === appCourse;
+    });
+  });
 
   return (
     <div className="space-y-8 text-left">
@@ -128,19 +133,31 @@ export default function LecturerVisualDashboard({
           </thead>
           <tbody>
             {allApplications.map((t: any, index: number) => {
+              const tutorEmail =
+                t.email || t.application?.user?.email || t.user?.email;
+              const tutorCourse =
+                t.courseCode ||
+                t.application?.courseCode ||
+                t.course?.courseCode;
+
               const isSelected = selectedApps.some(
-                (s: any) => s.email === t.email && s.courseCode === t.courseCode
+                (s: any) =>
+                  (s.email || s.application?.user?.email) === tutorEmail &&
+                  (s.courseCode || s.application?.courseCode) === tutorCourse
               );
 
               const reviews = Array.isArray(reviewData)
                 ? reviewData
                     .filter(
                       (r: any) =>
-                        r.application?.email === t.email &&
-                        r.application?.courseCode === t.courseCode
+                        r.application?.email === tutorEmail &&
+                        r.application?.courseCode === tutorCourse
                     )
                     .map((r: any) => ({
-                      lecturer: r.user?.email,
+                      lecturer:
+                        `${r.user?.firstName || ""} ${
+                          r.user?.lastName || ""
+                        }`.trim() || r.user?.email,
                       rank: r.rank,
                       comment: r.comment,
                     }))

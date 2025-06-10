@@ -14,54 +14,67 @@ export default function TutorCard({
   setSelectedApps,
   lecturerEmail,
 }: TutorCardProps) {
-  const [isSelected, setIsSelected] = useState(false);
+  const [isSelected, setIsSelected] = useState<boolean | null>(null);
 
   // Set initial selection state based on props
   useEffect(() => {
-    if (!Array.isArray(selectedApps)) return; // safeguard
+    if (!Array.isArray(selectedApps)) return;
 
-    const alreadySelected = selectedApps.some(
-      (t) => t.email === tutor.email && t.courseCode === tutor.courseCode
+    const match = selectedApps.some((s) =>
+      s.applicationApplicationId
+        ? s.applicationApplicationId === tutor.applicationId // from DB
+        : s.application?.applicationId === tutor.applicationId || // fallback for relation object
+          (s.email === tutor.email && s.courseCode === tutor.courseCode)
     );
-    setIsSelected(alreadySelected);
-  }, [selectedApps, tutor.email, tutor.courseCode]);
+
+    setIsSelected(match);
+  }, [selectedApps, tutor]);
+
   // Inside your component
   const { user } = useUser(); // Access the logged-in lecturer
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleToggleSelect = async () => {
-    const key = `tt-selected-tutors-${lecturerEmail}`;
-    const currentSelections = Array.isArray(selectedApps) ? selectedApps : [];
+    if (!user || isLoading) return; // 🔒 Prevent double-clicks
+    setIsLoading(true);
 
-    let updatedSelections;
-
-    if (isSelected) {
-      // Remove tutor from selection
-      updatedSelections = currentSelections.filter(
-        (t) => !(t.email === tutor.email && t.courseCode === tutor.courseCode)
-      );
-
-      // ✅ Call backend to delete the review
-      try {
-        await axios.post("/tutor-reviews/delete", {
-          userId: user?.id,
+    try {
+      if (isSelected) {
+        // ❌ Unselect
+        await axios.post("/selected-tutors/delete", {
+          userId: user.id,
           applicationId: tutor.applicationId,
         });
-        console.log("✅ Review deleted on unselect");
-      } catch (err) {
-        console.error("❌ Failed to delete review:", err);
+
+        await axios.post("/tutor-reviews/delete", {
+          userId: user.id,
+          applicationId: tutor.applicationId,
+        });
+
+        const res = await axios.get(`/selected-tutors/${user.id}`);
+        setSelectedApps(res.data);
+        setIsSelected(false);
+      } else {
+        // ✅ Select
+        await axios.post("/selected-tutors", {
+          userId: user.id,
+          applicationId: tutor.applicationId,
+        });
+
+        const res = await axios.get(`/selected-tutors/${user.id}`);
+        setSelectedApps(res.data);
+        setIsSelected(true);
       }
-    } else {
-      // Add tutor to selection
-      updatedSelections = [...currentSelections, tutor];
+
+      window.dispatchEvent(new CustomEvent("refresh-visual-analysis"));
+    } catch (err: any) {
+      console.error("❌ Toggle failed:", err);
+    } finally {
+      setIsLoading(false); // 🔓 Unlock after request
     }
-
-    setSelectedApps(updatedSelections);
-    localStorage.setItem(key, JSON.stringify(updatedSelections));
-    setIsSelected(!isSelected);
-
-    // Optionally refresh visual dashboard
-    window.dispatchEvent(new CustomEvent("refresh-visual-analysis"));
   };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-5 border border-purple-200 flex flex-col justify-between h-full">
       <div>
@@ -97,16 +110,19 @@ export default function TutorCard({
       </div>
 
       {/* Button to select or unselect tutor */}
-      <button
-        onClick={handleToggleSelect}
-        className={`mt-4 py-2 px-4 rounded font-semibold transition ${
-          isSelected
-            ? "bg-green-100 text-green-700 border border-green-500"
-            : "bg-purple-600 text-white hover:bg-purple-700"
-        }`}
-      >
-        {isSelected ? "✅ Selected (Undo)" : "Select"}
-      </button>
+      {isSelected !== null && (
+        <button
+          onClick={handleToggleSelect}
+          disabled={isLoading}
+          className={`mt-4 py-2 px-4 rounded font-semibold transition ${
+            isSelected
+              ? "bg-green-100 text-green-700 border border-green-500"
+              : "bg-purple-600 text-white hover:bg-purple-700"
+          } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+        >
+          {isSelected ? "✅ Selected (Undo)" : "Select"}
+        </button>
+      )}
     </div>
   );
 }

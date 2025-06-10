@@ -9,7 +9,7 @@ import {
 import { TutorApplication } from "./TutorApplication";
 import { CourseMapping } from "./CourseMapping";
 import { TutorReview } from "./TutorReview";
-
+import { SelectedTutor } from "./SelectedTutor";
 export type UserRole = "tutor" | "lecturer";
 
 @Entity()
@@ -53,4 +53,6 @@ export class Users {
 
   @OneToMany(() => TutorReview, (review) => review.user)
   reviews: TutorReview[];
+  @OneToMany(() => SelectedTutor, (st) => st.user)
+  selectedTutors: SelectedTutor[];
 }

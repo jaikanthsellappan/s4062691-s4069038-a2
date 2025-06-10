@@ -7,6 +7,7 @@ import { Availability } from "./entity/Availability";
 import { Role } from "./entity/Role";
 import { CourseMapping } from "./entity/CourseMapping";
 import { TutorReview } from "./entity/TutorReview";
+import { SelectedTutor } from "./entity/SelectedTutor";
 // import { Course }  "./entity/Course";
 
 export const AppDataSource = new DataSource({
@@ -29,6 +30,7 @@ export const AppDataSource = new DataSource({
     Role,
     CourseMapping,
     TutorReview,
+    SelectedTutor,
   ],
   migrations: [],
   subscribers: [],

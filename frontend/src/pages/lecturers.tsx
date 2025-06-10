@@ -13,7 +13,7 @@ export default function LecturersPage() {
   const [selectedApps, setSelectedApps] = useState<any[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState("applications");
-
+  const [sessionType, setSessionType] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
@@ -60,16 +60,24 @@ export default function LecturersPage() {
 
   // When changing tabs, refresh the list of selected tutors
   useEffect(() => {
-    setCurrentPage(1);
+    const fetchSelectedTutors = async () => {
+      if (!user) return;
+      try {
+        const res = await axios.get(`/selected-tutors/${user.id}`);
+        setSelectedApps(res.data);
+        console.log("✅ Loaded selected tutors from DB:", res.data);
+      } catch (err) {
+        console.error("❌ Failed to load selected tutors:", err);
+      }
+    };
 
+    fetchSelectedTutors(); // 👈 always run once on mount
+
+    // Also refresh if active tab becomes "selected"
     if (activeTab === "selected") {
-      const lecturer = user;
-      const updated = JSON.parse(
-        localStorage.getItem(`tt-selected-tutors-${user?.email}`) || "[]"
-      );
-      setSelectedApps(updated);
+      fetchSelectedTutors();
     }
-  }, [activeTab]);
+  }, [activeTab, user]);
 
   // Refresh the visual tab view when ranking data is updated
   useEffect(() => {
@@ -157,6 +165,9 @@ export default function LecturersPage() {
     const keywordInput = keyword.trim();
     const courseCodeMatch =
       keywordInput === "" || app.courseCode.includes(keywordInput);
+    const sessionMatch =
+      sessionType === "" ||
+      app.role.toLowerCase().includes(sessionType.toLowerCase());
     const courseMatch =
       course === "" ||
       app.courseName.toLowerCase().includes(course.toLowerCase());
@@ -172,9 +183,9 @@ export default function LecturersPage() {
       availability === "" || app.availability === availability;
 
     return (
-      courseCodeMatch &&
       courseMatch &&
       tutorMatch &&
+      sessionMatch &&
       skillMatch &&
       availabilityMatch
     );
@@ -197,6 +208,7 @@ export default function LecturersPage() {
     setSkill("");
     setAvailability("");
     setCurrentPage(1);
+    setSessionType("");
   };
   const handleUnselectTutor = async (tutor: any) => {
     const updated = selectedApps.filter(
@@ -251,18 +263,12 @@ export default function LecturersPage() {
           <div className="flex flex-wrap items-center gap-4 mb-6 bg-purple-100 p-4 rounded shadow-sm">
             <input
               type="text"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Search by Course Code (e.g., COSC2626)"
-              className="flex-grow border border-purple-400 rounded px-4 py-2 text-sm text-purple-900 bg-white placeholder-purple-600"
-            />
-            <input
-              type="text"
               value={course}
               onChange={(e) => setCourse(e.target.value)}
               placeholder="Course Name"
-              className="border border-purple-400 rounded px-4 py-2 text-sm text-purple-900 bg-white placeholder-purple-600"
+              className="flex-grow border border-purple-400 rounded px-4 py-2 text-sm text-purple-900 bg-white placeholder-purple-600"
             />
+
             <input
               type="text"
               value={tutorName}
@@ -270,6 +276,7 @@ export default function LecturersPage() {
               placeholder="Tutor Name"
               className="border border-purple-400 rounded px-4 py-2 text-sm text-purple-900 bg-white placeholder-purple-600"
             />
+
             <input
               type="text"
               value={skill}
@@ -278,14 +285,24 @@ export default function LecturersPage() {
               className="border border-purple-400 rounded px-4 py-2 text-sm text-purple-900 bg-white placeholder-purple-600"
             />
             <select
+              value={sessionType}
+              onChange={(e) => setSessionType(e.target.value)}
+              className="border border-purple-400 rounded px-4 py-2 text-sm text-purple-900 bg-white"
+            >
+              <option value="">Session Type</option>
+              <option value="Tutorial Assistant">Tutorial Assistant</option>
+              <option value="Lab Assistant">Lab Assistant</option>
+            </select>
+            <select
               value={availability}
               onChange={(e) => setAvailability(e.target.value)}
               className="border border-purple-400 rounded px-4 py-2 text-sm text-purple-900 bg-white"
             >
               <option value="">Availability</option>
-              <option value="full-time">Full Time</option>
-              <option value="part-time">Part Time</option>
+              <option value="Full Time">Full Time</option>
+              <option value="Part Time">Part Time</option>
             </select>
+
             <button
               onClick={handleReset}
               className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded text-sm font-medium"
