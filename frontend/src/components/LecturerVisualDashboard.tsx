@@ -38,11 +38,15 @@ export default function LecturerVisualDashboard({
           r.application?.courseCode === tutorCourse
       );
 
+      const validRanks = tutorReviews.filter(
+        (r: any) => r.rank !== null && r.rank !== undefined
+      );
+
       const avgRank =
-        tutorReviews.length > 0
+        validRanks.length > 0
           ? Math.round(
-              tutorReviews.reduce((sum, r) => sum + Number(r.rank || 0), 0) /
-                tutorReviews.length
+              validRanks.reduce((sum, r) => sum + Number(r.rank), 0) /
+                validRanks.length
             )
           : 0;
 
@@ -163,11 +167,15 @@ export default function LecturerVisualDashboard({
                     }))
                 : [];
 
+              const validRanks = reviews.filter(
+                (r: any) => r.rank !== null && r.rank !== undefined
+              );
+
               const avgRank =
-                reviews.length > 0
+                validRanks.length > 0
                   ? Math.round(
-                      reviews.reduce((sum, r) => sum + Number(r.rank || 0), 0) /
-                        reviews.length
+                      validRanks.reduce((sum, r) => sum + Number(r.rank), 0) /
+                        validRanks.length
                     )
                   : "—";
 
