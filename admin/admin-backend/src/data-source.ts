@@ -8,12 +8,12 @@ import { Role } from "./entity/Role";
 import { CourseMapping } from "./entity/CourseMapping";
 import { TutorReview } from "./entity/TutorReview";
 import { SelectedTutor } from "./entity/SelectedTutor";
-// import { Course }  "./entity/Course";
 
 export const AppDataSource = new DataSource({
   type: "mysql",
   host: "209.38.26.237",
   port: 3306,
+  /* Change to your own credentials */
   username: "S4062691",
   password: "Jai@123456",
   database: "S4062691",
