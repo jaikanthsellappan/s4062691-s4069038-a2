@@ -4,6 +4,8 @@ import { Users } from "../entity/User";
 import { CourseMapping } from "../entity/CourseMapping";
 import { TutorReview } from "../entity/TutorReview";
 import { TutorApplication } from "../entity/TutorApplication";
+import { In } from "typeorm";
+
 
 export const resolvers = {
   Query: {
@@ -19,56 +21,80 @@ export const resolvers = {
 
     // NEW: Candidates chosen for each course
     getCandidatesPerCourseDetailed: async () => {
-      const reviews = await AppDataSource.getRepository(TutorReview).find({
-        relations: ["user", "application"]
+      const applications = await AppDataSource.getRepository(TutorApplication).find({
+        relations: ["user"], // make sure TutorApplication has @ManyToOne(() => Users)
       });
 
-      const courseMap = new Map<string, Users[]>();
+      const courseToUsersMap = new Map<string, Map<number, Users>>();
 
-      for (const review of reviews) {
-        const courseCode = review.application.courseCode;
-        if (!courseMap.has(courseCode)) {
-          courseMap.set(courseCode, []);
+      for (const app of applications) {
+        const courseCode = app.courseCode;
+        const user = app.user;
+
+        if (!courseToUsersMap.has(courseCode)) {
+          courseToUsersMap.set(courseCode, new Map());
         }
-        courseMap.get(courseCode)!.push(review.user);
+
+        courseToUsersMap.get(courseCode)!.set(user.id, user); // unique user per course
       }
 
-      return Array.from(courseMap.entries()).map(([courseCode, users]) => ({
+      return Array.from(courseToUsersMap.entries()).map(([courseCode, userMap]) => ({
         courseCode,
-        users
+        users: Array.from(userMap.values()),
       }));
     },
 
     // NEW: Candidates chosen for >3 courses
     getOverChosenCandidatesDetailed: async () => {
-      const reviews = await AppDataSource.getRepository(TutorReview).find({
-        relations: ["user", "application"]
+      // Step 1: Load all tutor applications along with user relation
+      const applications = await AppDataSource.getRepository(TutorApplication).find({
+        relations: ["user"],
       });
 
+      // Step 2: Build map of userId to unique courseCodes
       const userCourseMap = new Map<number, Set<string>>();
 
-      for (const review of reviews) {
-        const userId = review.user.id;
-        const courseCode = review.application.courseCode;
+      for (const app of applications) {
+        const user = app.user;
+        if (user.role !== "tutor") continue; // Only consider tutors
+
+        const userId = user.id;
+        const courseCode = app.courseCode;
+
         if (!userCourseMap.has(userId)) {
           userCourseMap.set(userId, new Set());
         }
+
         userCourseMap.get(userId)!.add(courseCode);
       }
 
+      // Step 3: Extract userIds who have more than 3 unique courseCodes
       const overChosenUserIds = [...userCourseMap.entries()]
-        .filter(([_, courses]) => courses.size > 3)
+        .filter(([_, courseSet]) => courseSet.size > 3)
         .map(([userId]) => userId);
 
-      return await AppDataSource.getRepository(Users).findByIds(overChosenUserIds);
+      // Step 4: Return full tutor objects for those IDs
+      return await AppDataSource.getRepository(Users).findBy({
+        id: In(overChosenUserIds),
+        role: "tutor",
+      });
     },
 
     // NEW: Candidates not chosen at all
     getUnchosenCandidatesDetailed: async () => {
-      const allUsers = await AppDataSource.getRepository(Users).find();
-      const reviews = await AppDataSource.getRepository(TutorReview).find({ relations: ["user"] });
-      const chosenIds = new Set(reviews.map((r) => r.user.id));
-      return allUsers.filter((u) => !chosenIds.has(u.id));
+      // Step 1: Get all tutors
+      const tutorRepo = AppDataSource.getRepository(Users);
+      const allTutors = await tutorRepo.find({
+        where: { role: "tutor" },
+      });
+
+      // Step 2: Get all reviewed tutor userIds directly from TutorReview
+      const reviews = await AppDataSource.getRepository(TutorReview).find();
+      const reviewedUserIds = new Set(reviews.map((review) => review.id)); // <- userId from FK
+
+      // Step 3: Filter tutors NOT reviewed
+      const unchosenTutors = allTutors.filter((tutor) => !reviewedUserIds.has(tutor.id));
+      return unchosenTutors;
     },
   },
 
