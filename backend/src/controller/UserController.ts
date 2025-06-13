@@ -1,0 +1,120 @@
+/**
+ * POSTGRADUATE COMMENT:
+ * This method implements avatar upload/edit functionality using Multer for file handling.
+ * The uploaded avatar is saved to a local server folder (`/uploads`) and the file path is stored in the user's database record.
+ * We chose this architecture to keep the upload logic server-side (Express), allowing for better control over file validation,
+ * security (e.g., limiting file types), and scalability if moving to cloud storage later (e.g., AWS S3 or Firebase).
+ * This separation of concerns allows React to handle only UI events (file input selection), while the backend handles persistence.
+ * This is a standard pattern in full-stack apps for maintainability and clean responsibility boundaries.
+ */
+import { Request, Response } from "express";
+import { AppDataSource } from "../data-source";
+import { Users } from "../entity/User";
+import * as bcrypt from "bcrypt";
+
+export class UserController {
+  private userRepo = AppDataSource.getRepository(Users);
+
+  // Registers a new user after validating input and hashing the password
+  async register(req: Request, res: Response) {
+    const { firstName, lastName, email, password, role } = req.body;
+
+    if (!firstName || !email || !password || !role) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const existingUser = await this.userRepo.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(409).json({ message: "Email already registered." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = this.userRepo.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      role,
+    });
+
+    const savedUser = await this.userRepo.save(user);
+    return res
+      .status(201)
+      .json({ id: savedUser.id, email: savedUser.email, role: savedUser.role });
+  }
+
+  // Authenticates user credentials during login
+  async login(req: Request, res: Response) {
+    const { email, password } = req.body;
+    const user = await this.userRepo.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials." });
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ message: "Invalid credentials." });
+    }
+
+    if (user.isValid === false) {
+      return res.status(401).json({ message: "User is blocked." });
+    }
+
+    return res.json({
+      message: `Welcome ${user.firstName}`,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`,
+        role: user.role,
+        avatar: user.avatar,
+        createdAt: user.createdAt,
+      },
+    });
+  }
+
+  // Returns a user's profile based on user ID
+  async getProfile(req: Request, res: Response) {
+    const userId = Number(req.query.id);
+    if (!userId) return res.status(400).json({ message: "User ID required." });
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    return res.json({
+      id: user.id,
+      email: user.email,
+      name: user.firstName + " " + user.lastName,
+      role: user.role,
+      avatar: user.avatar,
+      joinedAt: user.createdAt,
+    });
+  }
+
+  // Allows the user to upload or update their avatar image
+  async updateAvatar(req: Request, res: Response) {
+    const userId = Number(req.body.userId);
+    const file = (req as any).file; // Allows access to uploaded file data
+
+    if (!userId || !file) {
+      return res
+        .status(400)
+        .json({ message: "User ID and avatar file are required." });
+    }
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    // Store the avatar file path in the user record
+    user.avatar = `/uploads/${file.filename}`;
+    await this.userRepo.save(user);
+
+    return res.json({
+      message: "Avatar uploaded successfully.",
+      avatar: user.avatar,
+    });
+  }
+}
