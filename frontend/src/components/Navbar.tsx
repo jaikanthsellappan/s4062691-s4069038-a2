@@ -8,16 +8,16 @@ export default function Navbar() {
   const router = useRouter();
   const { user } = useUser();
 
-  // If user is not logged in, block access to protected pages
+  // Prevent users from accessing protected pages without signing in
   const handleProtectedClick = (e: any, path: string) => {
     if (!user) {
       e.preventDefault();
-      alert("⚠️ Please sign in to access this page.");
+      alert("⚠️Please sign in to access this page.");
       router.push("/signin");
     }
   };
 
-  // Style the current page differently to highlight it
+  // This function styles the current page link to make it stand out
   const linkClass = (path: string) =>
     `hover:underline ${
       router.pathname === path

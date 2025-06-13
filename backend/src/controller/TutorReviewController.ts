@@ -9,9 +9,10 @@ export class TutorReviewController {
   private userRepo = AppDataSource.getRepository(Users);
   private appRepo = AppDataSource.getRepository(TutorApplication);
 
-  // POST /tutor-reviews
+  // Handles the creation or update of a tutor review
   async submit(req: Request, res: Response) {
-    console.log("Incoming Review:", req.body); // 👈 Add this line
+    console.log("Incoming Review:", req.body); // Logs the review payload for debugging
+
     const { userId, applicationId, rank, comment } = req.body;
 
     if (!userId || !applicationId || rank === undefined) {
@@ -28,11 +29,13 @@ export class TutorReviewController {
           .json({ message: "User or application not found." });
       }
 
+      // Check if a review already exists for this user and application
       let review = await this.reviewRepo.findOne({
         where: { user: { id: userId }, application: { applicationId } },
         relations: ["user", "application"],
       });
 
+      // If not, create a new review; otherwise update existing review
       if (!review) {
         review = this.reviewRepo.create({ user, application, rank, comment });
       } else {
@@ -48,7 +51,7 @@ export class TutorReviewController {
     }
   }
 
-  // GET /tutor-reviews
+  // Returns all reviews, optionally filtered by applicationId
   async getAll(req: Request, res: Response) {
     try {
       const { applicationId } = req.query;
@@ -67,7 +70,7 @@ export class TutorReviewController {
     }
   }
 
-  // POST /tutor-reviews/delete
+  // Soft deletes a review by clearing the rank and comment
   async delete(req: Request, res: Response) {
     const { userId, applicationId } = req.body;
 
@@ -90,11 +93,11 @@ export class TutorReviewController {
         return res.status(404).json({ message: "Review not found." });
       }
 
-      // Soft delete – set values to null
+      // Instead of removing the review, just clear the values
       review.rank = null;
       review.comment = null;
 
-      await this.reviewRepo.save(review); // not remove()
+      await this.reviewRepo.save(review); // Saves the soft-deleted state
 
       return res
         .status(200)

@@ -6,6 +6,7 @@ import * as bcrypt from "bcrypt";
 export class UserController {
   private userRepo = AppDataSource.getRepository(Users);
 
+  // Registers a new user after validating input and hashing the password
   async register(req: Request, res: Response) {
     const { firstName, lastName, email, password, role } = req.body;
 
@@ -34,6 +35,7 @@ export class UserController {
       .json({ id: savedUser.id, email: savedUser.email, role: savedUser.role });
   }
 
+  // Authenticates user credentials during login
   async login(req: Request, res: Response) {
     const { email, password } = req.body;
     const user = await this.userRepo.findOne({ where: { email } });
@@ -59,6 +61,8 @@ export class UserController {
       },
     });
   }
+
+  // Returns a user's profile based on user ID
   async getProfile(req: Request, res: Response) {
     const userId = Number(req.query.id);
     if (!userId) return res.status(400).json({ message: "User ID required." });
@@ -77,9 +81,10 @@ export class UserController {
     });
   }
 
+  // Allows the user to upload or update their avatar image
   async updateAvatar(req: Request, res: Response) {
     const userId = Number(req.body.userId);
-    const file = (req as any).file; // 👈 bypass type checking here
+    const file = (req as any).file; // Allows access to uploaded file data
 
     if (!userId || !file) {
       return res
@@ -90,7 +95,7 @@ export class UserController {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) return res.status(404).json({ message: "User not found." });
 
-    // ✅ Save the file path (e.g. /uploads/1234-avatar.png)
+    // Store the avatar file path in the user record
     user.avatar = `/uploads/${file.filename}`;
     await this.userRepo.save(user);
 
