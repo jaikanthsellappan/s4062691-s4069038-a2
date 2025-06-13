@@ -1,3 +1,12 @@
+/**
+ * POSTGRADUATE COMMENT:
+ * This function allows the user to select and upload an avatar image using a hidden file input.
+ * Once selected, the image is sent to the backend using a multipart/form-data request, handled by Multer in the Express server.
+ * On success, the user's avatar URL is updated in the global context (`setUser`). This triggers a UI re-render to display the new avatar.
+ * By keeping upload logic minimal on the frontend and offloading storage responsibility to the backend, we follow
+ * a scalable architecture where future updates like image compression, cloud hosting, or validation can be added safely server-side.
+ */
+
 import React, { useState, useRef, useEffect } from "react"; // ✅ Added useEffect
 import { useUser } from "@/context/UserContext";
 import axios from "@/api";

@@ -1,3 +1,12 @@
+/**
+ * POSTGRADUATE COMMENT:
+ * This method implements avatar upload/edit functionality using Multer for file handling.
+ * The uploaded avatar is saved to a local server folder (`/uploads`) and the file path is stored in the user's database record.
+ * We chose this architecture to keep the upload logic server-side (Express), allowing for better control over file validation,
+ * security (e.g., limiting file types), and scalability if moving to cloud storage later (e.g., AWS S3 or Firebase).
+ * This separation of concerns allows React to handle only UI events (file input selection), while the backend handles persistence.
+ * This is a standard pattern in full-stack apps for maintainability and clean responsibility boundaries.
+ */
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Users } from "../entity/User";
@@ -49,7 +58,7 @@ export class UserController {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
-    if(user.isValid === false) {
+    if (user.isValid === false) {
       return res.status(401).json({ message: "User is blocked." });
     }
 

@@ -3,86 +3,120 @@ import { Course } from "../src/entity/Course";
 import { Users } from "../src/entity/User";
 import { resolvers } from "../src/graphql/resolvers";
 
-// Increase Jest timeout to handle long-running async DB setup
+// Extend Jest timeout to avoid failures due to DB initialization delays
 jest.setTimeout(20000);
 
-// Initialize TypeORM connection before running tests
+//  Establish a DB connection before running any test cases
 beforeAll(async () => {
   if (!AppDataSource.isInitialized) {
     await AppDataSource.initialize();
   }
 });
 
-// Clean up DB connection after all tests finish
+// Properly close the DB connection after all tests are finished
 afterAll(async () => {
   if (AppDataSource.isInitialized) {
     await AppDataSource.destroy();
   }
 });
 
-// Test 1: Add a course and check if the correct code is returned
+// Test Case 1: Add a new course and confirm its creation
+// This test verifies that the `addCourse` mutation correctly inserts a new course
+// and returns the expected course code. This validates the admin's ability to
+// create new course records in the system.
 test("addCourse creates a course", async () => {
   const result = await resolvers.Mutation.addCourse(null, {
-    code: "TEST101", // Unique test course code
-    name: "Testing Course"
+    code: "TEST101", // Unique test input
+    name: "Testing Course",
   });
-  expect(result.code).toBe("TEST101"); // Verify correct course code is returned
+
+  // Assert that the returned course code matches the input
+  expect(result.code).toBe("TEST101");
 });
 
-// Test 2: Edit the course and verify name and availability fields are updated
+// Test Case 2: Update course fields and confirm changes are saved
+// This test checks if the `editCourse` mutation properly updates course fields.
+// It simulates an admin modifying the course name and marking it unavailable.
 test("editCourse updates course name and availability", async () => {
   await resolvers.Mutation.editCourse(null, {
-    code: "TEST101",
-    name: "Updated Course", // Change course name
-    isAvailable: false      // Mark course as unavailable
+    code: "TEST101", // Course to edit
+    name: "Updated Course", // New name
+    isAvailable: false, // Set course to unavailable
   });
 
+  // Fetch the course from DB and verify changes
   const repo = AppDataSource.getRepository(Course);
   const course = await repo.findOneBy({ code: "TEST101" });
-  expect(course?.name).toBe("Updated Course");      // Ensure name was updated
-  expect(course?.isAvailable).toBe(false);          // Ensure availability changed
+  expect(course?.name).toBe("Updated Course"); // Check if name updated
+  expect(course?.isAvailable).toBe(false); // Check if availability updated
 });
 
-// Test 3: Block a user and confirm isValid flag becomes false
+// Test Case 3: Block a user account (e.g., for disciplinary reasons)
+// This test simulates an admin blocking a user (e.g., tutor or applicant).
+// It ensures that the `isValid` field is updated correctly to prevent access.
 test("blockCandidate sets isValid to false", async () => {
-  const user = await AppDataSource.getRepository(Users).findOneBy({ email: "jai@gmail.com" });
-  expect(user).not.toBeNull(); // Ensure test data exists
+  const user = await AppDataSource.getRepository(Users).findOneBy({
+    email: "jai@gmail.com",
+  });
+  expect(user).not.toBeNull(); // Confirm test user exists
   if (!user) return;
 
-  const result = await resolvers.Mutation.blockCandidate(null, { userId: user.id });
-  expect(result).toBe(true); // Mutation should return true
+  // Trigger mutation to block the user
+  const result = await resolvers.Mutation.blockCandidate(null, {
+    userId: user.id,
+  });
+  expect(result).toBe(true); // Mutation should return true indicating success
 
-  const updated = await AppDataSource.getRepository(Users).findOneBy({ id: user.id });
-  expect(updated?.isValid).toBe(false); // Confirm user is marked invalid
+  // Reload user from DB and confirm `isValid` was updated
+  const updated = await AppDataSource.getRepository(Users).findOneBy({
+    id: user.id,
+  });
+  expect(updated?.isValid).toBe(false);
 });
 
-// Test 4: Unblock a user and confirm isValid flag becomes true
+//  Test Case 4: Unblock a previously blocked user
+// This test ensures that the `unblockCandidate` mutation correctly resets the
+// `isValid` field to true, allowing the user to log in and use the platform again.
 test("unblockCandidate sets isValid to true", async () => {
-  const user = await AppDataSource.getRepository(Users).findOneBy({ email: "jai@gmail.com" });
-  expect(user).not.toBeNull(); // Ensure test data exists
+  const user = await AppDataSource.getRepository(Users).findOneBy({
+    email: "jai@gmail.com",
+  });
+  expect(user).not.toBeNull(); // Ensure user is found
   if (!user) return;
 
-  const result = await resolvers.Mutation.unblockCandidate(null, { userId: user.id });
-  expect(result).toBe(true); // Mutation should return true
+  const result = await resolvers.Mutation.unblockCandidate(null, {
+    userId: user.id,
+  });
+  expect(result).toBe(true); // Confirm mutation returned success
 
-  const updated = await AppDataSource.getRepository(Users).findOneBy({ id: user.id });
-  expect(updated?.isValid).toBe(true); // Confirm user is marked valid again
+  // Check if user is now unblocked
+  const updated = await AppDataSource.getRepository(Users).findOneBy({
+    id: user.id,
+  });
+  expect(updated?.isValid).toBe(true);
 });
 
-// Test 5: Assign a lecturer to a course and confirm operation success
+// Test Case 5: Assign a lecturer to a course
+// This test verifies the assignment of a lecturer (assumed to be user with ID 12)
+// to a specific course. It's important for enabling backend course mapping.
 test("assignLecturer links lecturer with course", async () => {
   const result = await resolvers.Mutation.assignLecturer(null, {
-    courseCode: "TEST101", // Use test course created earlier
-    userId: 2,              // ⚠️ Make sure user ID 2 exists and is a lecturer
+    courseCode: "TEST101", // Course being assigned
+    userId: 12, // Lecturer's user ID
   });
-  expect(result).toBe(true); // Mutation should confirm success
+
+  // If the lecturer and course exist, the mutation should succeed
+  expect(result).toBe(true);
 });
 
-// Test 6: Attempt to delete a course that is in use and expect failure
+// Test Case 6: Try to delete a course already assigned to someone
+// This test ensures that the `deleteCourse` mutation does not allow deletion of a course
+// if it’s already assigned to a lecturer or in use. This preserves data integrity.
 test("deleteCourse fails if course is mapped", async () => {
   try {
     await resolvers.Mutation.deleteCourse(null, { code: "TEST101" });
   } catch (e: any) {
-    expect(e.message).toContain("cannot be deleted"); // Should match validation error
+    // Expect a failure message related to the course being in use
+    expect(e.message).toContain("cannot be deleted");
   }
 });
