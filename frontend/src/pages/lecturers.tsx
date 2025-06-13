@@ -167,7 +167,7 @@ export default function LecturersPage() {
       keywordInput === "" || app.courseCode.includes(keywordInput);
     const sessionMatch =
       sessionType === "" ||
-      app.role.toLowerCase().includes(sessionType.toLowerCase());
+      app.role?.trim().toLowerCase() === sessionType.trim().toLowerCase();
     const courseMatch =
       course === "" ||
       app.courseName.toLowerCase().includes(course.toLowerCase());
