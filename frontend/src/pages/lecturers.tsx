@@ -290,7 +290,7 @@ export default function LecturersPage() {
               className="border border-purple-400 rounded px-4 py-2 text-sm text-purple-900 bg-white"
             >
               <option value="">Session Type</option>
-              <option value="Tutorial Assistant">Tutorial Assistant</option>
+              <option value="Tutor">Tutorial Assistant</option>
               <option value="Lab Assistant">Lab Assistant</option>
             </select>
             <select
