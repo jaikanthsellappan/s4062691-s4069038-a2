@@ -49,6 +49,10 @@ export class UserController {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
+    if(user.isValid === false) {
+      return res.status(401).json({ message: "User is blocked." });
+    }
+
     return res.json({
       message: `Welcome ${user.firstName}`,
       user: {
