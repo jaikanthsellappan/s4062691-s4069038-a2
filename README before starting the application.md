@@ -3,10 +3,6 @@ TeachTeam Web Application
 Git Repository: https://github.com/rmit-fsd-2025-s1/s4062691-s4069038-a2.git
 Note: All code changes were tracked under the develop branch and merged into main as version-1.
 
-Introduction
-
-TeachTeam is a full-stack web-based tutor recruitment system built using Next.js with TypeScript for the frontend and Express.js with TypeORM and MySQL for the backend. It enables tutors to apply for courses and allows lecturers to review, select, and rank candidates through a dynamic dashboard. All user data and actions are now stored in a Cloud MySQL database rather than in browser localStorage, ensuring persistence and reliability across sessions.
-
 User Authentication and Registration
 
 Users can register as either a tutor or lecturer. The registration form captures the first name, last name, email, password, and role. Passwords are validated using a strength meter to ensure they contain at least 8 characters, one uppercase, one lowercase, one number, and one special symbol. Upon successful registration, users can log in and are redirected based on their assigned role.
@@ -64,3 +60,29 @@ Icons are used from Google Fonts Icon set.
 Final Notes
 
 TeachTeam delivers a fully functional end-to-end system for tutor recruitment and selection. It includes secure registration, role-based dashboards, visual data analysis, and a centralized admin panel. The app is scalable, modular, and built with modern full-stack technologies. All functional and non-functional requirements have been successfully implemented and verified.
+
+## References and Resources
+
+This project was developed using a combination of course-provided materials, open-source tools, and generative AI assistance. All references are acknowledged below:
+
+### Academic and Learning Materials
+
+- RMIT COSC2758 Week 10 Tutorial Content – Used for understanding and implementing GraphQL mutations and queries within the Express backend.
+
+### Tools & Generators
+
+- **Mermaid AI**  
+  URL: [https://www.mermaidchart.com/mermaid-ai](https://www.mermaidchart.com/mermaid-ai)  
+  Used for generating the Entity-Relationship Diagram (ERD) from schema descriptions to visualise backend table relations.
+
+### 🤖 Use of Generative AI (ChatGPT)
+
+OpenAI's ChatGPT was used **ethically** as a learning and development aid during the project, The tool was used to:
+
+- Generate TypeScript API call structures (e.g., in `UserContext.tsx`, `LecturerTabContent.tsx`)
+- Help debug asynchronous state updates in React (`LecturersPage.tsx`)
+- Suggest improvements in code readability, file modularisation, and backend endpoint structure
+- Generate or reword README sections for clarity and academic compliance
+- Guide logic separation for `VisualAnalysisDashboard.tsx` as per separation-of-concerns principles
+
+> All AI-generated content was reviewed, edited, and integrated with our own logic. No direct AI-generated code was used without modification or human oversight.
