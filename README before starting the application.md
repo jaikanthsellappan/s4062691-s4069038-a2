@@ -61,6 +61,8 @@ Final Notes
 
 TeachTeam delivers a fully functional end-to-end system for tutor recruitment and selection. It includes secure registration, role-based dashboards, visual data analysis, and a centralized admin panel. The app is scalable, modular, and built with modern full-stack technologies. All functional and non-functional requirements have been successfully implemented and verified.
 
+Note *** - If you are running this application with new database configurations, you need to add the courses and course mapping from the admin page (or) otherwise you can run the query that is mentioned in the dependencies.txt under the backend folder.
+
 ## References and Resources
 
 This project was developed using a combination of course-provided materials, open-source tools, and generative AI assistance. All references are acknowledged below:
